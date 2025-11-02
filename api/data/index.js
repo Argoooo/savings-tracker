@@ -1,6 +1,6 @@
 // API endpoint to get all data for a specific tracker (requires authentication)
 import { withAuth } from '../lib/auth.js';
-import { query } from '../lib/db.js';
+import { getSupabaseClient } from '../lib/db-supabase.js';
 
 async function handler(req, res) {
   try {
@@ -11,26 +11,39 @@ async function handler(req, res) {
       return res.status(400).json({ error: 'trackerId is required' });
     }
 
+    const supabase = getSupabaseClient(req.headers.get('authorization')?.replace('Bearer ', ''));
+
     // Fetch all data in parallel, filtered by tracker_id
     const [settingsResult, peopleResult, goalsResult, transactionsResult, scenarioRatesResult] = await Promise.all([
-      query('SELECT * FROM settings WHERE tracker_id = $1 LIMIT 1', [trackerId]),
-      query('SELECT * FROM people WHERE tracker_id = $1 ORDER BY created_at', [trackerId]),
-      query('SELECT * FROM goals WHERE tracker_id = $1 ORDER BY priority, deadline', [trackerId]),
-      query('SELECT * FROM transactions WHERE tracker_id = $1 ORDER BY date DESC', [trackerId]),
-      query('SELECT rates FROM scenario_rates WHERE tracker_id = $1 LIMIT 1', [trackerId])
+      supabase.from('settings').select('*').eq('tracker_id', trackerId).single(),
+      supabase.from('people').select('*').eq('tracker_id', trackerId).order('created_at', { ascending: true }),
+      supabase.from('goals').select('*').eq('tracker_id', trackerId).order('priority', { ascending: true }).order('deadline', { ascending: true }),
+      supabase.from('transactions').select('*').eq('tracker_id', trackerId).order('date', { ascending: false }),
+      supabase.from('scenario_rates').select('rates').eq('tracker_id', trackerId).single()
     ]);
 
+    // Check for errors
+    if (settingsResult.error && settingsResult.error.code !== 'PGRST116') throw settingsResult.error;
+    if (peopleResult.error) throw peopleResult.error;
+    if (goalsResult.error) throw goalsResult.error;
+    if (transactionsResult.error) throw transactionsResult.error;
+    if (scenarioRatesResult.error && scenarioRatesResult.error.code !== 'PGRST116') throw scenarioRatesResult.error;
+
     // Fetch incomes for all people
-    const people = peopleResult.rows || [];
+    const people = peopleResult.data || [];
     const peopleWithIncomes = await Promise.all(
       people.map(async (person) => {
-        const incomesResult = await query(
-          'SELECT * FROM incomes WHERE person_id = $1 ORDER BY created_at',
-          [person.id]
-        );
+        const { data: incomes, error: incomesError } = await supabase
+          .from('incomes')
+          .select('*')
+          .eq('person_id', person.id)
+          .order('created_at', { ascending: true });
+
+        if (incomesError) throw incomesError;
+
         return {
           ...person,
-          incomes: (incomesResult.rows || []).map(income => ({
+          incomes: (incomes || []).map(income => ({
             id: income.id,
             label: income.label,
             amount: parseFloat(income.amount),
@@ -41,9 +54,9 @@ async function handler(req, res) {
     );
 
     // Transform data to match frontend structure
-    const settings = settingsResult.rows[0] || {};
-    const scenarioRates = scenarioRatesResult.rows[0]?.rates 
-      ? JSON.parse(scenarioRatesResult.rows[0].rates)
+    const settings = settingsResult.data || {};
+    const scenarioRates = scenarioRatesResult.data?.rates 
+      ? JSON.parse(scenarioRatesResult.data.rates)
       : [5, 10, 15, 20];
 
     const response = {
@@ -62,7 +75,7 @@ async function handler(req, res) {
         fixedMonthlyContribution: parseFloat(p.fixed_monthly_contribution || 0),
         incomes: p.incomes
       })),
-      goals: (goalsResult.rows || []).map(g => ({
+      goals: (goalsResult.data || []).map(g => ({
         id: g.id,
         name: g.name,
         target: parseFloat(g.target),
@@ -70,7 +83,7 @@ async function handler(req, res) {
         owner: g.owner || 'Household',
         priority: parseInt(g.priority || 999)
       })),
-      transactions: (transactionsResult.rows || []).map(t => ({
+      transactions: (transactionsResult.data || []).map(t => ({
         id: t.id,
         date: t.date,
         person: t.person,

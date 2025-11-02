@@ -409,7 +409,16 @@
   </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
+<!-- Loading Screen -->
+<div id="loadingScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 1rem;">
+  <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+  <div style="color: var(--text);">Initializing Savings Tracker...</div>
+  <div id="loadingStatus" style="color: var(--muted); font-size: 0.875rem;"></div>
+</div>
+
+<nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom" style="display: none;" id="mainNav">
 <div class="container-fluid">
 <a class="navbar-brand fw-bold" href="#">💰 Savings Dashboard</a>
 <div class="d-flex gap-1 no-print btn-group-mobile">
@@ -954,30 +963,136 @@
     window.SUPABASE_URL = window.SUPABASE_URL || 'https://uqbcokdpldhrxccyddfz.supabase.co';
     window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxYmNva2RwbGRocnhjY3lkZGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTM5MzcsImV4cCI6MjA3NzY2OTkzN30.4yknX1zqpfloABqexwzl0ElLYVp4C_atUbNAR8P_1eU';
 
-    // Wait for auth to initialize
+    // Update loading status
+    function updateLoadingStatus(message) {
+      const statusEl = document.getElementById('loadingStatus');
+      if (statusEl) statusEl.textContent = message;
+      console.log(message);
+    }
+
+    console.log('🚀 Starting app initialization...');
+    updateLoadingStatus('Checking authentication...');
+
+    // Wait for auth to initialize (with timeout)
+    let authWaitAttempts = 0;
+    const MAX_AUTH_WAIT = 50; // 5 seconds max
+    
     function waitForAuth(callback) {
+      authWaitAttempts++;
+      
       if (typeof auth !== 'undefined' && auth && auth.supabase) {
+        console.log('✅ Auth initialized');
+        updateLoadingStatus('Auth ready');
         callback();
+      } else if (authWaitAttempts >= MAX_AUTH_WAIT) {
+        console.error('❌ Auth initialization timeout - trying direct Supabase check');
+        updateLoadingStatus('Auth timeout - trying direct check...');
+        // Fallback: try to check session directly
+        try {
+          if (typeof window.supabase === 'undefined') {
+            throw new Error('Supabase library not loaded');
+          }
+          const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+              console.log('✅ Session found via direct check');
+              updateLoadingStatus('Session found');
+              // Create auth object manually if needed
+              if (typeof auth === 'undefined') {
+                window.auth = {
+                  supabase: supabase,
+                  checkSession: async () => {
+                    const { data } = await supabase.auth.getSession();
+                    return data.session;
+                  },
+                  getToken: () => session?.access_token,
+                  getHeaders: () => ({
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json'
+                  }),
+                  signOut: () => supabase.auth.signOut()
+                };
+              }
+              callback();
+            } else {
+              console.log('❌ No session found, redirecting to login');
+              updateLoadingStatus('No session - redirecting...');
+              setTimeout(() => window.location.href = '/login.html', 1000);
+            }
+          }).catch(err => {
+            console.error('❌ Session check failed:', err);
+            updateLoadingStatus('Session check failed - redirecting...');
+            setTimeout(() => window.location.href = '/login.html', 1000);
+          });
+        } catch (error) {
+          console.error('❌ Direct auth check failed:', error);
+          updateLoadingStatus('Auth failed: ' + error.message);
+          setTimeout(() => window.location.href = '/login.html', 2000);
+        }
       } else {
+        if (authWaitAttempts % 10 === 0) {
+          updateLoadingStatus(`Waiting for auth scripts to load... (${authWaitAttempts}/${MAX_AUTH_WAIT})`);
+        }
         setTimeout(() => waitForAuth(callback), 100);
       }
+    }
+    
+    // Hide loading screen
+    function hideLoadingScreen() {
+      const loadingScreen = document.getElementById('loadingScreen');
+      const mainNav = document.getElementById('mainNav');
+      const trackerSwitcher = document.getElementById('trackerSwitcher');
+      const main = document.querySelector('main');
+      
+      if (loadingScreen) {
+        loadingScreen.style.display = 'none';
+      }
+      if (mainNav) {
+        mainNav.style.display = 'flex';
+      }
+      if (trackerSwitcher && trackerSwitcher.style.display === 'none') {
+        trackerSwitcher.style.display = 'block';
+      }
+      if (main) {
+        main.style.display = 'block';
+      }
+      
+      console.log('✅ Loading screen hidden, UI visible');
     }
 
     // Check authentication and initialize app
     waitForAuth(async () => {
       try {
+        updateLoadingStatus('Checking session...');
+        console.log('🔐 Checking session...');
         const session = await auth.checkSession();
+        console.log('Session check result:', session ? '✅ Authenticated' : '❌ Not authenticated');
+        
         if (!session) {
           // Not logged in, redirect to login
-          window.location.href = '/login.html';
+          console.log('Redirecting to login...');
+          updateLoadingStatus('Not authenticated - redirecting to login...');
+          setTimeout(() => window.location.href = '/login.html', 1000);
           return;
         }
 
+        updateLoadingStatus('Initializing app...');
+        console.log('🎯 Initializing app...');
         // Initialize tracker manager and API
         await initializeApp();
+        console.log('✅ App initialized successfully!');
+        
+        // Hide loading screen after successful initialization
+        hideLoadingScreen();
       } catch (error) {
-        console.error('Auth error:', error);
-        window.location.href = '/login.html';
+        console.error('❌ Auth/init error:', error);
+        console.error('Full error:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+        updateLoadingStatus('Error: ' + error.message);
+        
+        // Show error but don't hide loading screen
+        setTimeout(() => {
+          alert('Failed to initialize app: ' + error.message + '\n\nCheck browser console (F12) for details.');
+        }, 500);
       }
     });
 
@@ -1004,42 +1119,79 @@
     // Initialize app with authentication
     async function initializeApp() {
       try {
+        updateLoadingStatus('Initializing tracker manager...');
+        console.log('📦 Initializing tracker manager...');
         // Initialize tracker manager
         const tempApi = new SavingsAPI(auth, 'temp');
         trackerManager = new TrackerManager(tempApi);
         currentTrackerId = await trackerManager.initialize();
+        console.log('✅ Tracker initialized:', currentTrackerId);
+        updateLoadingStatus('Tracker ready');
         
         // Initialize API with tracker
+        updateLoadingStatus('Setting up API...');
         api = new SavingsAPI(auth, currentTrackerId);
         trackerManager.api = api;
+        console.log('✅ API initialized');
         
         // Initialize tracker UI
-        initializeTrackerUI(trackerManager);
+        updateLoadingStatus('Setting up UI...');
+        console.log('🎨 Initializing tracker UI...');
+        if (typeof initializeTrackerUI === 'function') {
+          initializeTrackerUI(trackerManager);
+          // Show tracker switcher
+          const trackerSwitcher = document.getElementById('trackerSwitcher');
+          if (trackerSwitcher) {
+            trackerSwitcher.style.display = 'block';
+          }
+        } else {
+          console.warn('⚠️ initializeTrackerUI function not found');
+        }
         
         // Load data from backend
+        updateLoadingStatus('Loading your data...');
+        console.log('📥 Loading data from backend...');
         await loadDataFromBackend();
+        console.log('✅ Data loaded:', {
+          people: appState.people.length,
+          goals: appState.goals.length,
+          transactions: appState.transactions.length
+        });
+        updateLoadingStatus('Data loaded');
         
         // Initial render
+        updateLoadingStatus('Rendering dashboard...');
+        console.log('🎨 Rendering UI...');
         renderAll();
+        console.log('✅ Render complete!');
+        
+        // Small delay before hiding loading screen for smooth transition
+        setTimeout(() => {
+          hideLoadingScreen();
+        }, 300);
       } catch (error) {
-        console.error('App initialization error:', error);
-        alert('Failed to initialize app: ' + error.message);
+        console.error('❌ App initialization error:', error);
+        console.error('Error stack:', error.stack);
+        updateLoadingStatus('Error: ' + error.message);
+        throw error; // Re-throw so caller can handle
       }
     }
 
     // Load data from backend API
     async function loadDataFromBackend() {
       try {
+        console.log('📡 Fetching data from API...');
         const data = await api.getAllData();
+        console.log('📊 Received data:', data);
         
         // Transform backend data to app state format
         appState = {
           settings: {
-            currency: data.settings.currency || 'PHP',
-            locale: data.settings.locale || 'en-PH',
-            currentRatePct: data.settings.currentRatePct || 12,
-            apyPct: data.settings.apyPct || 3,
-            inflationPct: data.settings.inflationPct || 4
+            currency: data.settings?.currency || 'PHP',
+            locale: data.settings?.locale || 'en-PH',
+            currentRatePct: data.settings?.currentRatePct || 12,
+            apyPct: data.settings?.apyPct || 3,
+            inflationPct: data.settings?.inflationPct || 4
           },
           people: (data.people || []).map(p => ({
             id: p.id,
@@ -1074,11 +1226,17 @@
 
         // If no data, show default sample (for new users)
         if (appState.people.length === 0 && appState.goals.length === 0) {
-          console.log('No data found, showing default state');
+          console.log('ℹ️ No data found, showing empty state');
         }
       } catch (error) {
-        console.error('Error loading data:', error);
-        // Continue with default state on error
+        console.error('❌ Error loading data:', error);
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          response: error.response
+        });
+        // Continue with default state on error - don't block rendering
+        console.log('⚠️ Continuing with empty state due to error');
       }
     }
 
