@@ -40,110 +40,81 @@ class AuthManager {
 
   async checkSession() {
     if (!this.supabase) return null;
-
     try {
-      const { data: { session } } = await this.supabase.auth.getSession();
-      this.session = session;
-      return session;
+      const { data, error } = await this.supabase.auth.getSession();
+      if (error) throw error;
+      this.session = data.session;
+      return data.session;
     } catch (error) {
-      console.error('Error checking session:', error);
+      console.error('Session check error:', error);
       return null;
     }
+  }
+
+  async signIn(email, password) {
+    if (!this.supabase) throw new Error('Supabase not initialized');
+    const { data, error } = await this.supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    if (error) throw error;
+    this.session = data.session;
+    return data.session;
+  }
+
+  async signUp(email, password) {
+    if (!this.supabase) throw new Error('Supabase not initialized');
+    const { data, error } = await this.supabase.auth.signUp({
+      email,
+      password
+    });
+    if (error) throw error;
+    this.session = data.session;
+    return data.session;
+  }
+
+  async signOut() {
+    if (!this.supabase) return;
+    const { error } = await this.supabase.auth.signOut();
+    if (error) throw error;
+    this.session = null;
+  }
+
+  async resetPassword(email) {
+    if (!this.supabase) throw new Error('Supabase not initialized');
+    const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login.html`
+    });
+    if (error) throw error;
   }
 
   getToken() {
     return this.session?.access_token || null;
   }
 
-  isAuthenticated() {
-    return !!this.session;
-  }
-
-  async signUp(email, password) {
-    if (!this.supabase) throw new Error('Supabase not initialized');
-
-    try {
-      const { data, error } = await this.supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      return { user: data.user, session: data.session };
-    } catch (error) {
-      console.error('Sign up error:', error);
-      throw error;
-    }
-  }
-
-  async signIn(email, password) {
-    if (!this.supabase) throw new Error('Supabase not initialized');
-
-    try {
-      const { data, error } = await this.supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      this.session = data.session;
-      return { user: data.user, session: data.session };
-    } catch (error) {
-      console.error('Sign in error:', error);
-      throw error;
-    }
-  }
-
-  async signOut() {
-    if (!this.supabase) return;
-
-    try {
-      const { error } = await this.supabase.auth.signOut();
-      if (error) throw error;
-      this.session = null;
-    } catch (error) {
-      console.error('Sign out error:', error);
-      throw error;
-    }
-  }
-
-  async resetPassword(email) {
-    if (!this.supabase) throw new Error('Supabase not initialized');
-
-    try {
-      const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('Reset password error:', error);
-      throw error;
-    }
-  }
-
-  onAuthChange(event, session) {
-    // This will be called whenever auth state changes
-    // Override in your app to handle login/logout
-    console.log('Auth state changed:', event, session ? 'Logged in' : 'Logged out');
-    
-    // Dispatch custom event for app to listen to
-    window.dispatchEvent(new CustomEvent('auth-change', { 
-      detail: { event, session, isAuthenticated: !!session } 
-    }));
-  }
-
   getHeaders() {
     const token = this.getToken();
-    if (!token) return {};
-
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
     return {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     };
+  }
+
+  isAuthenticated() {
+    return !!this.session;
+  }
+
+  onAuthChange(event, session) {
+    // Override this method for custom auth change handling
+    if (event === 'SIGNED_OUT') {
+      // Redirect to login on sign out
+      if (window.location.pathname !== '/login.html' && !window.location.pathname.includes('login')) {
+        window.location.href = '/login.html';
+      }
+    }
   }
 }
 
