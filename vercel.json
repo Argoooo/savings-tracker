@@ -6,18 +6,6 @@
     {
       "source": "/api/(.*)",
       "destination": "/api/$1"
-    },
-    {
-      "source": "/",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/savings_app_v16.html",
-      "destination": "/savings_app_v16.html"
-    },
-    {
-      "source": "/login.html",
-      "destination": "/login.html"
     }
   ],
   "headers": [
