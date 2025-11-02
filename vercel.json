@@ -2,6 +2,11 @@
   "version": 2,
   "cleanUrls": false,
   "trailingSlash": false,
+  "git": {
+    "deploymentEnabled": {
+      "master": true
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
