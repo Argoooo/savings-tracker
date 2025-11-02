@@ -1,0 +1,14 @@
+# Netlify Configuration
+[build]
+  # No build command needed for static site
+  command = "echo 'No build step required'"
+  publish = "."
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[functions]
+  directory = "netlify/functions"
+
