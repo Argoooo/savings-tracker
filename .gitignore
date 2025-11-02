@@ -44,3 +44,7 @@ Thumbs.db
 # Database backups
 *.sql
 *.db
+
+# Markdown files (except README.md)
+*.md
+!README.md
