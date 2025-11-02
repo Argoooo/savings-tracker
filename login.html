@@ -329,11 +329,21 @@
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="js/auth.js"></script>
   <script>
-    // Set Supabase credentials
+    // Set Supabase credentials BEFORE loading auth.js
     window.SUPABASE_URL = window.SUPABASE_URL || 'https://uqbcokdpldhrxccyddfz.supabase.co';
     window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxYmNva2RwbGRocnhjY3lkZGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTM5MzcsImV4cCI6MjA3NzY2OTkzN30.4yknX1zqpfloABqexwzl0ElLYVp4C_atUbNAR8P_1eU';
+  </script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Helper function to wait for auth to be ready
+    function waitForAuth(callback) {
+      if (typeof auth !== 'undefined' && auth && auth.supabase) {
+        callback();
+      } else {
+        setTimeout(() => waitForAuth(callback), 100);
+      }
+    }
 
     function showAlert(message, type = 'danger') {
       const container = document.getElementById('alert-container');
@@ -372,8 +382,17 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border-sm"></span> Connecting...';
 
+        // Wait for auth to be initialized if needed
+        if (typeof auth === 'undefined') {
+          throw new Error('Authentication not ready. Please refresh the page.');
+        }
+
         if (!auth.supabase) {
-          throw new Error('Supabase client not initialized');
+          // Wait a bit and retry
+          await new Promise(resolve => setTimeout(resolve, 500));
+          if (!auth.supabase) {
+            throw new Error('Supabase client not initialized');
+          }
         }
 
         const { data, error } = await auth.supabase.auth.signInWithOAuth({
@@ -432,6 +451,15 @@
         return;
       }
 
+      // Wait for auth to be ready
+      if (typeof auth === 'undefined' || !auth.supabase) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        if (typeof auth === 'undefined' || !auth.supabase) {
+          showAlert('Authentication not ready. Please refresh the page.');
+          return;
+        }
+      }
+
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner-border-sm"></span> Signing in...';
 
@@ -466,20 +494,22 @@
         return;
       }
 
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-border-sm"></span> Creating account...';
+      waitForAuth(async () => {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border-sm"></span> Creating account...';
 
-      try {
-        await auth.signUp(email, password);
-        showAlert('Account created! Please check your email to verify your account.', 'success');
-        setTimeout(() => {
-          showSignIn();
-        }, 2000);
-      } catch (error) {
-        showAlert(error.message || 'Failed to create account.');
-        btn.disabled = false;
-        btn.innerHTML = 'Create Account';
-      }
+        try {
+          await auth.signUp(email, password);
+          showAlert('Account created! Please check your email to verify your account.', 'success');
+          setTimeout(() => {
+            showSignIn();
+          }, 2000);
+        } catch (error) {
+          showAlert(error.message || 'Failed to create account.');
+          btn.disabled = false;
+          btn.innerHTML = 'Create Account';
+        }
+      });
     });
 
     // Reset Password
@@ -488,28 +518,36 @@
       const btn = document.getElementById('reset-btn');
       const email = document.getElementById('reset-email').value;
 
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-border-sm"></span> Sending...';
+      waitForAuth(async () => {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border-sm"></span> Sending...';
 
-      try {
-        await auth.resetPassword(email);
-        showAlert('Password reset email sent! Check your inbox.', 'success');
-        setTimeout(() => {
-          showSignIn();
-        }, 2000);
-      } catch (error) {
-        showAlert(error.message || 'Failed to send reset email.');
-        btn.disabled = false;
-        btn.innerHTML = 'Send Reset Link';
-      }
+        try {
+          await auth.resetPassword(email);
+          showAlert('Password reset email sent! Check your inbox.', 'success');
+          setTimeout(() => {
+            showSignIn();
+          }, 2000);
+        } catch (error) {
+          showAlert(error.message || 'Failed to send reset email.');
+          btn.disabled = false;
+          btn.innerHTML = 'Send Reset Link';
+        }
+      });
     });
 
     // Check if already logged in
-    window.addEventListener('DOMContentLoaded', async () => {
-      const session = await auth.checkSession();
-      if (session) {
-        window.location.href = '/';
-      }
+    window.addEventListener('DOMContentLoaded', () => {
+      waitForAuth(async () => {
+        try {
+          const session = await auth.checkSession();
+          if (session) {
+            window.location.href = '/';
+          }
+        } catch (error) {
+          // Ignore errors, user can still login
+        }
+      });
     });
   </script>
 </body>

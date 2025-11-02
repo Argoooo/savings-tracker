@@ -1,9 +1,15 @@
-// Settings API endpoint (requires authentication)
+// Settings API endpoint (requires authentication and trackerId)
 import { withAuth } from '../lib/auth.js';
 import { getSupabaseClient } from '../lib/db-supabase.js';
 
 async function handler(req, res) {
   const userId = req.user.id;
+  const { trackerId } = req.query; // Get from query parameter
+
+  if (!trackerId) {
+    return res.status(400).json({ error: 'trackerId is required' });
+  }
+
   const supabase = getSupabaseClient(req.headers.get('authorization')?.replace('Bearer ', ''));
 
   if (req.method === 'GET') {
@@ -11,7 +17,7 @@ async function handler(req, res) {
       const { data, error } = await supabase
         .from('settings')
         .select('*')
-        .eq('user_id', userId)
+        .eq('tracker_id', trackerId)
         .single();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = not found
@@ -23,7 +29,7 @@ async function handler(req, res) {
         const { data: newSettings, error: insertError } = await supabase
           .from('settings')
           .insert({
-            user_id: userId,
+            tracker_id: trackerId,
             currency: 'PHP',
             locale: 'en-PH',
             current_rate_pct: 12.00,
@@ -63,7 +69,7 @@ async function handler(req, res) {
       const { data, error } = await supabase
         .from('settings')
         .upsert({
-          user_id: userId,
+          tracker_id: trackerId,
           currency,
           locale,
           current_rate_pct: currentRatePct,
@@ -72,7 +78,7 @@ async function handler(req, res) {
           updated_at: new Date().toISOString(),
           last_modified: new Date().toISOString()
         }, {
-          onConflict: 'user_id'
+          onConflict: 'tracker_id'
         })
         .select()
         .single();

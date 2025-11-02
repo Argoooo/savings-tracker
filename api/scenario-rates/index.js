@@ -1,9 +1,15 @@
-// Scenario rates API endpoint (requires authentication)
+// Scenario rates API endpoint (requires authentication and trackerId)
 import { withAuth } from '../lib/auth.js';
 import { getSupabaseClient } from '../lib/db-supabase.js';
 
 async function handler(req, res) {
   const userId = req.user.id;
+  const { trackerId } = req.query; // Get from query parameter
+
+  if (!trackerId) {
+    return res.status(400).json({ error: 'trackerId is required' });
+  }
+
   const supabase = getSupabaseClient(req.headers.get('authorization')?.replace('Bearer ', ''));
 
   if (req.method === 'GET') {
@@ -11,7 +17,7 @@ async function handler(req, res) {
       const { data: scenarioRates, error } = await supabase
         .from('scenario_rates')
         .select('rates')
-        .eq('user_id', userId)
+        .eq('tracker_id', trackerId)
         .single();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = not found
@@ -39,11 +45,11 @@ async function handler(req, res) {
       const { error } = await supabase
         .from('scenario_rates')
         .upsert({
-          user_id: userId,
+          tracker_id: trackerId,
           rates: JSON.stringify(rates),
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'user_id'
+          onConflict: 'tracker_id'
         });
 
       if (error) throw error;

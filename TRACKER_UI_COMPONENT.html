@@ -1,0 +1,145 @@
+<!-- Tracker Switcher UI Component -->
+<!-- Add this to your main app HTML (e.g., index.html or savings_app_v16.html) -->
+
+<!-- Tracker Selector (add to header/navbar) -->
+<div class="tracker-switcher" style="padding: 1rem; background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+  <div style="display: flex; gap: 1rem; align-items: center; max-width: 1200px; margin: 0 auto;">
+    <label for="tracker-select" style="font-weight: 600; color: #495057;">
+      Active Tracker:
+    </label>
+    <select id="tracker-select" style="flex: 1; max-width: 300px; padding: 0.5rem; border-radius: 6px; border: 1px solid #ced4da; font-size: 1rem;">
+      <option>Loading trackers...</option>
+    </select>
+    <button id="btn-new-tracker" class="btn btn-primary" style="white-space: nowrap;">
+      + New Tracker
+    </button>
+  </div>
+</div>
+
+<!-- Create Tracker Modal -->
+<div id="create-tracker-modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+  <div style="background-color: white; margin: 15% auto; padding: 2rem; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+    <h3 style="margin-top: 0; margin-bottom: 1.5rem; color: #333;">Create New Tracker</h3>
+    
+    <div style="margin-bottom: 1rem;">
+      <label for="new-tracker-name" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #495057;">
+        Tracker Name *
+      </label>
+      <input 
+        type="text" 
+        id="new-tracker-name" 
+        placeholder="e.g., Personal Savings, Family Fund"
+        style="width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid #ced4da; font-size: 1rem;"
+        required
+      >
+    </div>
+    
+    <div style="margin-bottom: 1.5rem;">
+      <label for="new-tracker-desc" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #495057;">
+        Description (optional)
+      </label>
+      <textarea 
+        id="new-tracker-desc" 
+        placeholder="What is this tracker for?"
+        rows="3"
+        style="width: 100%; padding: 0.75rem; border-radius: 6px; border: 1px solid #ced4da; font-size: 1rem; resize: vertical;"
+      ></textarea>
+    </div>
+    
+    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+      <button id="btn-cancel-tracker" class="btn btn-secondary" style="padding: 0.75rem 1.5rem; border-radius: 6px; border: 1px solid #ced4da; background: #6c757d; color: white; cursor: pointer;">
+        Cancel
+      </button>
+      <button id="btn-create-tracker" class="btn btn-primary" style="padding: 0.75rem 1.5rem; border-radius: 6px; border: none; background: #667eea; color: white; cursor: pointer; font-weight: 600;">
+        Create Tracker
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CSS Styles (add to your main stylesheet) -->
+<style>
+  .tracker-switcher {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .tracker-switcher select {
+    flex: 1;
+    max-width: 300px;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    font-size: 1rem;
+    background: white;
+  }
+
+  .tracker-switcher select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+  }
+
+  #create-tracker-modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #create-tracker-modal > div {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .btn {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary {
+    background-color: #667eea;
+    color: white;
+    font-weight: 600;
+  }
+
+  .btn-primary:hover {
+    background-color: #5568d3;
+  }
+
+  .btn-secondary {
+    background-color: #6c757d;
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background-color: #5a6268;
+  }
+
+  @media (max-width: 768px) {
+    .tracker-switcher > div {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .tracker-switcher select {
+      max-width: 100%;
+    }
+  }
+</style>
+

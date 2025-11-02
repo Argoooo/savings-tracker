@@ -9,40 +9,33 @@ class AuthManager {
   }
 
   init() {
-    // Initialize Supabase client
-    // Get these from your Supabase project settings
-    const supabaseUrl = window.SUPABASE_URL || process.env.SUPABASE_URL;
-    const supabaseAnonKey = window.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Supabase URL and Anon Key must be set as environment variables or window variables');
+    // Wait for Supabase library and window variables to be available
+    if (typeof window.supabase === 'undefined') {
+      // Supabase script might still be loading, retry
+      setTimeout(() => this.init(), 100);
       return;
     }
 
-    // Use Supabase CDN
-    if (typeof window.supabase !== 'undefined') {
-      this.supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
-    } else {
-      // Load Supabase from CDN if not already loaded
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-      script.onload = () => {
-        this.supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
-        this.checkSession();
-      };
-      document.head.appendChild(script);
+    // Get credentials from window variables (set in HTML before this script)
+    const supabaseUrl = window.SUPABASE_URL;
+    const supabaseAnonKey = window.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Supabase URL and Anon Key must be set as window.SUPABASE_URL and window.SUPABASE_ANON_KEY');
+      return;
     }
+
+    // Create Supabase client
+    this.supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
 
     // Check for existing session
     this.checkSession();
 
     // Listen for auth changes
-    if (this.supabase) {
-      this.supabase.auth.onAuthStateChange((event, session) => {
-        this.session = session;
-        this.onAuthChange(event, session);
-      });
-    }
+    this.supabase.auth.onAuthStateChange((event, session) => {
+      this.session = session;
+      this.onAuthChange(event, session);
+    });
   }
 
   async checkSession() {

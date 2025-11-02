@@ -1,9 +1,15 @@
-// People API endpoint (requires authentication)
+// People API endpoint (requires authentication and trackerId)
 import { withAuth } from '../lib/auth.js';
 import { getSupabaseClient } from '../lib/db-supabase.js';
 
 async function handler(req, res) {
   const userId = req.user.id;
+  const { trackerId } = req.query; // Get from query parameter
+
+  if (!trackerId) {
+    return res.status(400).json({ error: 'trackerId is required' });
+  }
+
   const supabase = getSupabaseClient(req.headers.get('authorization')?.replace('Bearer ', ''));
 
   if (req.method === 'GET') {
@@ -11,7 +17,7 @@ async function handler(req, res) {
       const { data: people, error } = await supabase
         .from('people')
         .select('*')
-        .eq('user_id', userId)
+        .eq('tracker_id', trackerId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -56,7 +62,7 @@ async function handler(req, res) {
         .from('people')
         .insert({
           id,
-          user_id: userId,
+          tracker_id: trackerId,
           name,
           current_savings: currentSavings || 0,
           fixed_monthly_contribution: fixedMonthlyContribution || 0
@@ -92,7 +98,7 @@ async function handler(req, res) {
     try {
       const { id, name, currentSavings, fixedMonthlyContribution, incomes } = req.body;
 
-      // Update person
+      // Update person (verify it belongs to user's tracker)
       const { error: personError } = await supabase
         .from('people')
         .update({
@@ -102,7 +108,7 @@ async function handler(req, res) {
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
-        .eq('user_id', userId); // Ensure user owns this record
+        .eq('tracker_id', trackerId); // Ensure it's in the correct tracker
 
       if (personError) throw personError;
 
@@ -143,12 +149,12 @@ async function handler(req, res) {
         return res.status(400).json({ error: 'Person ID is required' });
       }
 
-      // Delete person (incomes will be cascade deleted via foreign key)
+      // Delete person (verify it belongs to user's tracker)
       const { error } = await supabase
         .from('people')
         .delete()
         .eq('id', id)
-        .eq('user_id', userId); // Ensure user owns this record
+        .eq('tracker_id', trackerId);
 
       if (error) throw error;
 

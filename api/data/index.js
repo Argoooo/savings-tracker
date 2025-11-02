@@ -1,18 +1,23 @@
-// API endpoint to get all data (requires authentication)
+// API endpoint to get all data for a specific tracker (requires authentication)
 import { withAuth } from '../lib/auth.js';
 import { query } from '../lib/db.js';
 
 async function handler(req, res) {
   try {
     const userId = req.user.id; // From auth middleware
+    const { trackerId } = req.query; // Get tracker ID from query parameter
 
-    // Fetch all data in parallel, filtered by user_id
+    if (!trackerId) {
+      return res.status(400).json({ error: 'trackerId is required' });
+    }
+
+    // Fetch all data in parallel, filtered by tracker_id
     const [settingsResult, peopleResult, goalsResult, transactionsResult, scenarioRatesResult] = await Promise.all([
-      query('SELECT * FROM settings WHERE user_id = $1 LIMIT 1', [userId]),
-      query('SELECT * FROM people WHERE user_id = $1 ORDER BY created_at', [userId]),
-      query('SELECT * FROM goals WHERE user_id = $1 ORDER BY priority, deadline', [userId]),
-      query('SELECT * FROM transactions WHERE user_id = $1 ORDER BY date DESC', [userId]),
-      query('SELECT rates FROM scenario_rates WHERE user_id = $1 LIMIT 1', [userId])
+      query('SELECT * FROM settings WHERE tracker_id = $1 LIMIT 1', [trackerId]),
+      query('SELECT * FROM people WHERE tracker_id = $1 ORDER BY created_at', [trackerId]),
+      query('SELECT * FROM goals WHERE tracker_id = $1 ORDER BY priority, deadline', [trackerId]),
+      query('SELECT * FROM transactions WHERE tracker_id = $1 ORDER BY date DESC', [trackerId]),
+      query('SELECT rates FROM scenario_rates WHERE tracker_id = $1 LIMIT 1', [trackerId])
     ]);
 
     // Fetch incomes for all people
@@ -42,6 +47,7 @@ async function handler(req, res) {
       : [5, 10, 15, 20];
 
     const response = {
+      trackerId: trackerId,
       settings: {
         currency: settings.currency || 'PHP',
         locale: settings.locale || 'en-PH',

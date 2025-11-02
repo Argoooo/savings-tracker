@@ -1,9 +1,15 @@
-// Goals API endpoint (requires authentication)
+// Goals API endpoint (requires authentication and trackerId)
 import { withAuth } from '../lib/auth.js';
 import { getSupabaseClient } from '../lib/db-supabase.js';
 
 async function handler(req, res) {
   const userId = req.user.id;
+  const { trackerId } = req.query; // Get from query parameter
+
+  if (!trackerId) {
+    return res.status(400).json({ error: 'trackerId is required' });
+  }
+
   const supabase = getSupabaseClient(req.headers.get('authorization')?.replace('Bearer ', ''));
 
   if (req.method === 'GET') {
@@ -11,7 +17,7 @@ async function handler(req, res) {
       const { data: goals, error } = await supabase
         .from('goals')
         .select('*')
-        .eq('user_id', userId)
+        .eq('tracker_id', trackerId)
         .order('priority', { ascending: true })
         .order('deadline', { ascending: true });
 
@@ -39,7 +45,7 @@ async function handler(req, res) {
         .from('goals')
         .insert({
           id,
-          user_id: userId,
+          tracker_id: trackerId,
           name,
           target,
           deadline,
@@ -69,7 +75,7 @@ async function handler(req, res) {
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
-        .eq('user_id', userId); // Ensure user owns this record
+        .eq('tracker_id', trackerId); // Ensure it's in the correct tracker
 
       if (error) throw error;
 
@@ -90,7 +96,7 @@ async function handler(req, res) {
         .from('goals')
         .delete()
         .eq('id', id)
-        .eq('user_id', userId); // Ensure user owns this record
+        .eq('tracker_id', trackerId); // Ensure it's in the correct tracker
 
       if (error) throw error;
 

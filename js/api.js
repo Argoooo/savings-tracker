@@ -1,15 +1,18 @@
 // API Client for Savings App
-// Updated to use authentication with Supabase
+// Updated to use authentication with Supabase and support multiple trackers
 
 const API_BASE = window.location.origin;
 
 class SavingsAPI {
-  constructor(authManager) {
+  constructor(authManager, trackerId) {
     this.auth = authManager;
+    this.trackerId = trackerId;
   }
 
   async request(endpoint, options = {}) {
-    const url = `${API_BASE}/api${endpoint}`;
+    // Add trackerId to all requests
+    const separator = endpoint.includes('?') ? '&' : '?';
+    const url = `${API_BASE}/api${endpoint}${separator}trackerId=${this.trackerId}`;
     
     // Get auth headers
     const headers = {
@@ -69,7 +72,59 @@ class SavingsAPI {
     }
   }
 
-  // Data operations
+  // Trackers management
+  async getTrackers() {
+    // Trackers endpoint doesn't need trackerId
+    const url = `${API_BASE}/api/trackers`;
+    const headers = {
+      'Content-Type': 'application/json',
+      ...this.auth?.getHeaders()
+    };
+    
+    const response = await fetch(url, { headers });
+    if (!response.ok) throw new Error('Failed to fetch trackers');
+    return await response.json();
+  }
+
+  async createTracker(name, description = '') {
+    const url = `${API_BASE}/api/trackers`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.auth?.getHeaders()
+      },
+      body: JSON.stringify({ name, description })
+    });
+    if (!response.ok) throw new Error('Failed to create tracker');
+    return await response.json();
+  }
+
+  async updateTracker(id, name, description) {
+    const url = `${API_BASE}/api/trackers`;
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.auth?.getHeaders()
+      },
+      body: JSON.stringify({ id, name, description })
+    });
+    if (!response.ok) throw new Error('Failed to update tracker');
+    return await response.json();
+  }
+
+  async deleteTracker(id) {
+    const url = `${API_BASE}/api/trackers?id=${id}`;
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: this.auth?.getHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to delete tracker');
+    return await response.json();
+  }
+
+  // Data operations (all require trackerId which is automatically added)
   async getAllData() {
     return await this.request('/data');
   }
@@ -174,18 +229,22 @@ class SavingsAPI {
   }
 }
 
-// Initialize with auth manager (will be set after auth.js loads)
+// Initialize with auth manager and tracker ID (will be set after auth loads)
 let api = null;
+let currentTrackerId = null;
 
-// Wait for auth to be available
-if (typeof auth !== 'undefined') {
-  api = new SavingsAPI(auth);
-} else {
-  // Create placeholder that will be replaced
-  api = new SavingsAPI(null);
-  
-  // Update when auth becomes available
-  window.addEventListener('auth-ready', () => {
-    api = new SavingsAPI(auth);
-  });
+// Helper to initialize API with tracker
+function initializeAPI(trackerId) {
+  if (typeof auth !== 'undefined' && auth) {
+    currentTrackerId = trackerId;
+    api = new SavingsAPI(auth, trackerId);
+    return api;
+  }
+  return null;
+}
+
+// Export for use in other modules
+if (typeof window !== 'undefined') {
+  window.SavingsAPI = SavingsAPI;
+  window.initializeAPI = initializeAPI;
 }
