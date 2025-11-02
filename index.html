@@ -40,21 +40,29 @@
     // Initialize Supabase client
     const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
-    // Check authentication status
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        // User is authenticated - redirect to main app
-        // You can create a main app page or use your existing savings_app_v16.html
-        window.location.href = '/savings_app_v16.html';
-      } else {
-        // User is not authenticated - redirect to login
+    // Handle OAuth callback first (Supabase uses hash fragments)
+    if (window.location.hash) {
+      // Process the OAuth callback
+      supabase.auth.getSession().then(() => {
+        // Clear hash and redirect
+        window.location.replace('/savings_app_v16.html');
+      });
+    } else {
+      // Check authentication status
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          // User is authenticated - redirect to main app
+          window.location.href = '/savings_app_v16.html';
+        } else {
+          // User is not authenticated - redirect to login
+          window.location.href = '/login.html';
+        }
+      }).catch((error) => {
+        console.error('Auth check error:', error);
+        // On error, redirect to login
         window.location.href = '/login.html';
-      }
-    }).catch((error) => {
-      console.error('Auth check error:', error);
-      // On error, redirect to login
-      window.location.href = '/login.html';
-    });
+      });
+    }
   </script>
 </body>
 </html>

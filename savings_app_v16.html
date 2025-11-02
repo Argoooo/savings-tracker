@@ -973,6 +973,13 @@
     console.log('🚀 Starting app initialization...');
     updateLoadingStatus('Checking authentication...');
 
+    // Handle OAuth callback (Supabase adds hash fragments after OAuth redirect)
+    // Check if we're returning from OAuth
+    if (window.location.hash) {
+      console.log('🔗 OAuth callback detected, processing...');
+      updateLoadingStatus('Completing Google sign-in...');
+    }
+
     // Wait for auth to initialize (with timeout)
     let authWaitAttempts = 0;
     const MAX_AUTH_WAIT = 50; // 5 seconds max
@@ -982,8 +989,25 @@
       
       if (typeof auth !== 'undefined' && auth && auth.supabase) {
         console.log('✅ Auth initialized');
-        updateLoadingStatus('Auth ready');
-        callback();
+        
+        // Handle OAuth callback if hash is present
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          console.log('🔗 Processing OAuth callback...');
+          updateLoadingStatus('Completing sign-in...');
+          
+          // Supabase will automatically handle the hash, but we can help it along
+          auth.supabase.auth.getSession().then(() => {
+            // Clear hash from URL
+            if (window.history && window.history.replaceState) {
+              window.history.replaceState(null, '', window.location.pathname);
+            }
+            updateLoadingStatus('Sign-in complete!');
+            callback();
+          });
+        } else {
+          updateLoadingStatus('Auth ready');
+          callback();
+        }
       } else if (authWaitAttempts >= MAX_AUTH_WAIT) {
         console.error('❌ Auth initialization timeout - trying direct Supabase check');
         updateLoadingStatus('Auth timeout - trying direct check...');
