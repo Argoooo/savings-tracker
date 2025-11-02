@@ -2,6 +2,42 @@
 
 <html lang="en">
 <head>
+<script>
+  // ⚠️ CRITICAL EARLY DIAGNOSTIC - Runs BEFORE everything else
+  (function() {
+    console.log('%c🔴 EARLY DIAGNOSTIC START', 'color: red; font-size: 16px; font-weight: bold;');
+    console.log('🔴 URL:', window.location.href);
+    console.log('🔴 Hash:', window.location.hash);
+    console.log('🔴 Document ready state:', document.readyState);
+    console.log('🔴 Timestamp:', new Date().toISOString());
+    
+    // Track DOM ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('🔴 DOM Content Loaded');
+      });
+    } else {
+      console.log('🔴 DOM already loaded');
+    }
+    
+    // Track page load
+    window.addEventListener('load', function() {
+      console.log('🔴 Window Load event fired');
+    });
+    
+    // Track errors
+    window.addEventListener('error', function(e) {
+      console.error('🔴 WINDOW ERROR:', e.message, 'at', e.filename + ':' + e.lineno);
+    });
+    
+    // Track promise rejections
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('🔴 UNHANDLED PROMISE:', e.reason);
+    });
+    
+    console.log('🔴 Early diagnostic complete - scripts should load next');
+  })();
+</script>
 <meta charset="utf-8"/>
 <title>Savings Dashboard — Bootstrap Edition</title>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
@@ -955,18 +991,25 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Auth & API Scripts -->
 <script>
-    // CRITICAL: Run immediately when page loads
-    console.log('📄 savings_app_v16.html loaded');
+    // ⚠️ CRITICAL: Run immediately when page loads
+    console.log('%c📄 savings_app_v16.html SCRIPT BLOCK STARTED', 'color: blue; font-size: 14px; font-weight: bold;');
     console.log('🔗 URL:', window.location.href);
     console.log('🔗 Hash:', window.location.hash);
+    console.log('🔗 Document ready:', document.readyState);
     console.log('📚 Scripts will load next...');
     
     // Verify Supabase is loaded (from head)
     if (typeof window.supabase === 'undefined') {
         console.error('❌ Supabase library not loaded from CDN!');
+        console.error('❌ Check Network tab for: @supabase/supabase-js');
     } else {
-        console.log('✅ Supabase library loaded');
+        console.log('✅ Supabase library loaded:', typeof window.supabase);
     }
+    
+    // Check if we can access window
+    console.log('✅ window object accessible:', typeof window !== 'undefined');
+    console.log('✅ document accessible:', typeof document !== 'undefined');
+    console.log('✅ console accessible:', typeof console !== 'undefined');
 </script>
 <script src="js/auth.js" onerror="console.error('❌ CRITICAL: Failed to load js/auth.js - check file exists!')"></script>
 <script src="js/api.js" onerror="console.error('❌ CRITICAL: Failed to load js/api.js - check file exists!')"></script>
