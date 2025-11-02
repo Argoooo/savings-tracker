@@ -8,12 +8,6 @@
       "destination": "/api/$1"
     }
   ],
-  "routes": [
-    {
-      "src": "/js/(.*)",
-      "dest": "/js/$1"
-    }
-  ],
   "headers": [
     {
       "source": "/api/(.*)",
