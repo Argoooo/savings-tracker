@@ -235,16 +235,24 @@ let currentTrackerId = null;
 
 // Helper to initialize API with tracker
 function initializeAPI(trackerId) {
-  if (typeof auth !== 'undefined' && auth) {
+  const authInstance = typeof window !== 'undefined' ? window.auth : (typeof auth !== 'undefined' ? auth : null);
+  if (authInstance) {
     currentTrackerId = trackerId;
-    api = new SavingsAPI(auth, trackerId);
+    api = new SavingsAPI(authInstance, trackerId);
     return api;
   }
+  console.warn('⚠️ initializeAPI: auth not available');
   return null;
 }
 
-// Export for use in other modules
+// Export for use in other modules (Browser)
 if (typeof window !== 'undefined') {
   window.SavingsAPI = SavingsAPI;
   window.initializeAPI = initializeAPI;
+  console.log('✅ api.js: SavingsAPI exported to window');
+}
+
+// Export for Node.js modules
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { SavingsAPI, initializeAPI };
 }

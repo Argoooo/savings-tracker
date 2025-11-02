@@ -491,7 +491,7 @@
   </div>
 </div>
 
-<main class="container my-3">
+<main class="container my-3" style="display: none;" id="mainContent">
 <!-- Tabs -->
 <ul class="nav nav-pills no-print" id="mainTabs" role="tablist">
 <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-target="#tabDashboard" data-bs-toggle="pill" role="tab" type="button">📊 Dashboard</button></li>
@@ -954,9 +954,49 @@
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Auth & API Scripts -->
-<script src="js/auth.js"></script>
-<script src="js/api.js"></script>
-<script src="js/tracker-manager.js"></script>
+<script>
+    // CRITICAL: Run immediately when page loads
+    console.log('📄 savings_app_v16.html loaded');
+    console.log('🔗 URL:', window.location.href);
+    console.log('🔗 Hash:', window.location.hash);
+    console.log('📚 Scripts will load next...');
+    
+    // Verify Supabase is loaded (from head)
+    if (typeof window.supabase === 'undefined') {
+        console.error('❌ Supabase library not loaded from CDN!');
+    } else {
+        console.log('✅ Supabase library loaded');
+    }
+</script>
+<script src="js/auth.js" onerror="console.error('❌ CRITICAL: Failed to load js/auth.js - check file exists!')"></script>
+<script src="js/api.js" onerror="console.error('❌ CRITICAL: Failed to load js/api.js - check file exists!')"></script>
+<script src="js/tracker-manager.js" onerror="console.error('❌ CRITICAL: Failed to load js/tracker-manager.js - check file exists!')"></script>
+<script>
+    // Verify scripts loaded
+    console.log('📚 After script tags:');
+    console.log('auth.js:', typeof window.auth !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
+    console.log('SavingsAPI:', typeof window.SavingsAPI !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
+    console.log('TrackerManager:', typeof window.TrackerManager !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
+    
+    // Use window references for safety
+    const auth = window.auth;
+    const SavingsAPI = window.SavingsAPI;
+    const TrackerManager = window.TrackerManager;
+    
+    // Verify critical dependencies
+    if (typeof auth === 'undefined') {
+        console.error('❌ CRITICAL ERROR: auth is not defined!');
+        console.error('Check if js/auth.js loaded correctly');
+    }
+    if (typeof SavingsAPI === 'undefined') {
+        console.error('❌ CRITICAL ERROR: SavingsAPI is not defined!');
+        console.error('Check if js/api.js loaded correctly');
+    }
+    if (typeof TrackerManager === 'undefined') {
+        console.error('❌ CRITICAL ERROR: TrackerManager is not defined!');
+        console.error('Check if js/tracker-manager.js loaded correctly');
+    }
+</script>
 <script>
     /********** AUTHENTICATION & INITIALIZATION **********/
     // Set Supabase credentials
@@ -987,7 +1027,10 @@
     function waitForAuth(callback) {
       authWaitAttempts++;
       
-      if (typeof auth !== 'undefined' && auth && auth.supabase) {
+      // Use window.auth for safety
+      const authInstance = typeof window !== 'undefined' && window.auth ? window.auth : (typeof auth !== 'undefined' ? auth : null);
+      
+      if (authInstance && authInstance.supabase) {
         console.log('✅ Auth initialized');
         
         // Handle OAuth callback if hash is present
@@ -996,7 +1039,7 @@
           updateLoadingStatus('Completing sign-in...');
           
           // Supabase will automatically handle the hash, but we can help it along
-          auth.supabase.auth.getSession().then(() => {
+          authInstance.supabase.auth.getSession().then(() => {
             // Clear hash from URL
             if (window.history && window.history.replaceState) {
               window.history.replaceState(null, '', window.location.pathname);
@@ -1022,7 +1065,7 @@
               console.log('✅ Session found via direct check');
               updateLoadingStatus('Session found');
               // Create auth object manually if needed
-              if (typeof auth === 'undefined') {
+              if (!window.auth || typeof window.auth === 'undefined') {
                 window.auth = {
                   supabase: supabase,
                   checkSession: async () => {
@@ -1036,6 +1079,7 @@
                   }),
                   signOut: () => supabase.auth.signOut()
                 };
+                console.log('✅ Created window.auth manually');
               }
               callback();
             } else {
@@ -1066,22 +1110,44 @@
       const loadingScreen = document.getElementById('loadingScreen');
       const mainNav = document.getElementById('mainNav');
       const trackerSwitcher = document.getElementById('trackerSwitcher');
-      const main = document.querySelector('main');
+      const mainContent = document.getElementById('mainContent');
+      
+      console.log('🔄 Hiding loading screen...');
       
       if (loadingScreen) {
         loadingScreen.style.display = 'none';
+        console.log('✅ Loading screen hidden');
+      } else {
+        console.warn('⚠️ Loading screen element not found');
       }
+      
       if (mainNav) {
         mainNav.style.display = 'flex';
+        console.log('✅ Navbar shown');
+      } else {
+        console.warn('⚠️ Navbar element not found');
       }
-      if (trackerSwitcher && trackerSwitcher.style.display === 'none') {
-        trackerSwitcher.style.display = 'block';
+      
+      if (trackerSwitcher) {
+        if (trackerSwitcher.style.display === 'none') {
+          trackerSwitcher.style.display = 'block';
+        }
+        console.log('✅ Tracker switcher shown');
+      } else {
+        console.warn('⚠️ Tracker switcher element not found');
       }
-      if (main) {
-        main.style.display = 'block';
+      
+      if (mainContent) {
+        mainContent.style.display = 'block';
+        console.log('✅ Main content shown');
+      } else {
+        console.warn('⚠️ Main content element not found');
       }
       
       console.log('✅ Loading screen hidden, UI visible');
+      
+      // Force a repaint
+      document.body.offsetHeight;
     }
 
     // Check authentication and initialize app
@@ -1089,7 +1155,14 @@
       try {
         updateLoadingStatus('Checking session...');
         console.log('🔐 Checking session...');
-        const session = await auth.checkSession();
+        
+        // Get auth instance
+        const authInstance = window.auth || auth;
+        if (!authInstance) {
+          throw new Error('Auth instance not found!');
+        }
+        
+        const session = await authInstance.checkSession();
         console.log('Session check result:', session ? '✅ Authenticated' : '❌ Not authenticated');
         
         if (!session) {
@@ -1145,31 +1218,48 @@
       try {
         updateLoadingStatus('Initializing tracker manager...');
         console.log('📦 Initializing tracker manager...');
+        // Get auth instance
+        const authInstance = window.auth || auth;
+        if (!authInstance) {
+          throw new Error('Auth instance not available for tracker initialization');
+        }
+        
         // Initialize tracker manager
-        const tempApi = new SavingsAPI(auth, 'temp');
-        trackerManager = new TrackerManager(tempApi);
+        updateLoadingStatus('Initializing tracker manager...');
+        const SavingsAPIClass = window.SavingsAPI || SavingsAPI;
+        const TrackerManagerClass = window.TrackerManager || TrackerManager;
+        
+        if (!SavingsAPIClass || !TrackerManagerClass) {
+          throw new Error('Required classes not loaded. Check js/api.js and js/tracker-manager.js');
+        }
+        
+        const tempApi = new SavingsAPIClass(authInstance, 'temp');
+        trackerManager = new TrackerManagerClass(tempApi);
         currentTrackerId = await trackerManager.initialize();
         console.log('✅ Tracker initialized:', currentTrackerId);
         updateLoadingStatus('Tracker ready');
         
         // Initialize API with tracker
         updateLoadingStatus('Setting up API...');
-        api = new SavingsAPI(auth, currentTrackerId);
+        api = new SavingsAPIClass(authInstance, currentTrackerId);
         trackerManager.api = api;
         console.log('✅ API initialized');
         
         // Initialize tracker UI
         updateLoadingStatus('Setting up UI...');
         console.log('🎨 Initializing tracker UI...');
-        if (typeof initializeTrackerUI === 'function') {
-          initializeTrackerUI(trackerManager);
+        const initializeTrackerUIFn = window.initializeTrackerUI || initializeTrackerUI;
+        if (typeof initializeTrackerUIFn === 'function') {
+          initializeTrackerUIFn(trackerManager);
           // Show tracker switcher
           const trackerSwitcher = document.getElementById('trackerSwitcher');
           if (trackerSwitcher) {
             trackerSwitcher.style.display = 'block';
           }
+          console.log('✅ Tracker UI initialized');
         } else {
           console.warn('⚠️ initializeTrackerUI function not found');
+          console.warn('Available functions:', Object.keys(window).filter(k => k.includes('tracker') || k.includes('Tracker')));
         }
         
         // Load data from backend
@@ -1430,7 +1520,10 @@
     $('#logoutBtn').addEventListener('click', async () => {
       if(confirm('Are you sure you want to logout?')) {
         try {
-          await auth.signOut();
+          const authInstance = window.auth || auth;
+          if (authInstance && authInstance.signOut) {
+            await authInstance.signOut();
+          }
           window.location.href = '/login.html';
         } catch (error) {
           console.error('Logout error:', error);
@@ -1441,10 +1534,14 @@
     // Listen for tracker changes
     window.addEventListener('tracker-changed', async () => {
       if (trackerManager) {
-        api = new SavingsAPI(auth, trackerManager.currentTrackerId);
-        trackerManager.api = api;
-        await loadDataFromBackend();
-        renderAll();
+        const authInstance = window.auth || auth;
+        const SavingsAPIClass = window.SavingsAPI || SavingsAPI;
+        if (authInstance && SavingsAPIClass) {
+          api = new SavingsAPIClass(authInstance, trackerManager.currentTrackerId);
+          trackerManager.api = api;
+          await loadDataFromBackend();
+          renderAll();
+        }
       }
     });
     

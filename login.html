@@ -398,7 +398,7 @@
         const { data, error } = await auth.supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: `${window.location.origin}/`
+            redirectTo: `${window.location.origin}/savings_app_v16.html`
           }
         });
 

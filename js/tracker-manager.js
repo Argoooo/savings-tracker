@@ -266,7 +266,7 @@ function initializeTrackerUI(trackerManager) {
   });
 }
 
-// Export for use in other modules
+// Export for use in other modules (Browser)
 if (typeof window !== 'undefined') {
   window.TrackerManager = TrackerManager;
   window.renderTrackerSelector = renderTrackerSelector;
@@ -274,5 +274,18 @@ if (typeof window !== 'undefined') {
   window.hideCreateTrackerModal = hideCreateTrackerModal;
   window.handleCreateTracker = handleCreateTracker;
   window.initializeTrackerUI = initializeTrackerUI;
+  console.log('✅ tracker-manager.js: TrackerManager exported to window');
+}
+
+// Export for Node.js modules
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { 
+    TrackerManager, 
+    renderTrackerSelector, 
+    showCreateTrackerModal, 
+    hideCreateTrackerModal, 
+    handleCreateTracker, 
+    initializeTrackerUI 
+  };
 }
 

@@ -147,10 +147,17 @@ class AuthManager {
   }
 }
 
-// Export singleton
+// Export singleton - CRITICAL for browser use
 const auth = new AuthManager();
 
-// Export for use in other modules
+// Make available globally (for browser)
+if (typeof window !== 'undefined') {
+  window.AuthManager = AuthManager;
+  window.auth = auth;
+  console.log('✅ auth.js: AuthManager and auth exported to window');
+}
+
+// Export for use in other modules (Node.js)
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { AuthManager, auth };
 }
