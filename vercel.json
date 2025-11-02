@@ -2,7 +2,6 @@
   "version": 2,
   "cleanUrls": false,
   "trailingSlash": false,
-  "outputDirectory": ".",
   "rewrites": [
     {
       "source": "/api/(.*)",
