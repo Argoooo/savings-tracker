@@ -9,6 +9,8 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <!-- QR Code Libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
@@ -414,9 +416,62 @@
 <button class="btn btn-ghost btn-sm" id="printBtn">🖨️</button>
 <button class="btn btn-outline-secondary btn-sm" id="themeToggle" title="Toggle theme">🌓</button>
 <button class="btn btn-outline-danger btn-sm" id="resetBtn">↺</button>
+<button class="btn btn-outline-primary btn-sm" id="logoutBtn" title="Logout">🚪</button>
 </div>
 </div>
 </nav>
+
+<!-- Tracker Switcher -->
+<div class="tracker-switcher" style="padding: 0.75rem 1rem; background: var(--panel); border-bottom: 1px solid rgba(255,255,255,.08);">
+  <div style="display: flex; gap: 1rem; align-items: center; max-width: 1400px; margin: 0 auto;">
+    <label for="tracker-select" style="font-weight: 600; color: var(--muted); font-size: 0.9rem;">
+      Active Tracker:
+    </label>
+    <select id="tracker-select" style="flex: 1; max-width: 300px; padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,.15); font-size: 0.9rem; background: var(--bg); color: var(--text);">
+      <option>Loading trackers...</option>
+    </select>
+    <button id="btn-new-tracker" class="btn btn-primary btn-sm" style="white-space: nowrap;">
+      + New Tracker
+    </button>
+  </div>
+</div>
+
+<!-- Create Tracker Modal -->
+<div id="create-tracker-modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+  <div style="background-color: var(--bg); margin: 15% auto; padding: 2rem; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,.15);">
+    <h3 style="margin-top: 0; margin-bottom: 1.5rem; color: var(--text);">Create New Tracker</h3>
+    
+    <div style="margin-bottom: 1rem;">
+      <label for="new-tracker-name" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text);">
+        Tracker Name *
+      </label>
+      <input 
+        type="text" 
+        id="new-tracker-name" 
+        placeholder="e.g., Personal Savings, Family Fund"
+        class="form-control"
+        required
+      >
+    </div>
+    
+    <div style="margin-bottom: 1.5rem;">
+      <label for="new-tracker-desc" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text);">
+        Description (optional)
+      </label>
+      <textarea 
+        id="new-tracker-desc" 
+        placeholder="What is this tracker for?"
+        rows="3"
+        class="form-control"
+      ></textarea>
+    </div>
+    
+    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+      <button id="btn-cancel-tracker" class="btn btn-secondary">Cancel</button>
+      <button id="btn-create-tracker" class="btn btn-primary">Create Tracker</button>
+    </div>
+  </div>
+</div>
 
 <!-- Sync notification banner -->
 <div class="sync-banner" id="syncBanner">
@@ -889,51 +944,167 @@
 </main>
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Auth & API Scripts -->
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/tracker-manager.js"></script>
 <script>
+    /********** AUTHENTICATION & INITIALIZATION **********/
+    // Set Supabase credentials
+    window.SUPABASE_URL = window.SUPABASE_URL || 'https://uqbcokdpldhrxccyddfz.supabase.co';
+    window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxYmNva2RwbGRocnhjY3lkZGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTM5MzcsImV4cCI6MjA3NzY2OTkzN30.4yknX1zqpfloABqexwzl0ElLYVp4C_atUbNAR8P_1eU';
+
+    // Wait for auth to initialize
+    function waitForAuth(callback) {
+      if (typeof auth !== 'undefined' && auth && auth.supabase) {
+        callback();
+      } else {
+        setTimeout(() => waitForAuth(callback), 100);
+      }
+    }
+
+    // Check authentication and initialize app
+    waitForAuth(async () => {
+      try {
+        const session = await auth.checkSession();
+        if (!session) {
+          // Not logged in, redirect to login
+          window.location.href = '/login.html';
+          return;
+        }
+
+        // Initialize tracker manager and API
+        await initializeApp();
+      } catch (error) {
+        console.error('Auth error:', error);
+        window.location.href = '/login.html';
+      }
+    });
+
     /********** STATE **********/
     const STORAGE_KEY = 'savingsBootstrapV1';
     const uid = () => 'id-' + Math.random().toString(36).slice(2,9);
     const todayOffset = (d)=>{ const x=new Date(); x.setDate(x.getDate()+d); return x.toISOString().slice(0,10); };
     
-    // Removed GitHub sync - keeping only QR code sync
+    // Global variables for API and tracker
+    let api = null;
+    let trackerManager = null;
+    let currentTrackerId = null;
 
     const defaultState = {
       settings: { currency:'PHP', locale:'en-PH', currentRatePct:12, apyPct:3, inflationPct:4 },
-      people: [
-        { id:uid(), name:'Michael', currentSavings:120000, fixedMonthlyContribution:0, incomes:[
-          { id:uid(), label:'Salary', amount:60000, frequency:'monthly' },
-          { id:uid(), label:'Freelance', amount:15000, frequency:'monthly' }
-        ]},
-        { id:uid(), name:'Jane', currentSavings:80000, fixedMonthlyContribution:0, incomes:[
-          { id:uid(), label:'Salary', amount:55000, frequency:'monthly' }
-        ]},
-      ],
-      goals: [
-        { id:uid(), name:'Emergency Fund', target:200000, deadline:'2026-12-31', owner:'Household', priority:1 },
-        { id:uid(), name:'Vacation', target:150000, deadline:'2026-06-30', owner:'Household', priority:2 },
-        { id:uid(), name:'House Downpayment', target:1000000, deadline:'2029-06-30', owner:'Household', priority:3 },
-      ],
-      transactions: [
-        { id:uid(), date:todayOffset(-20), person:'Michael', amount:5000, note:'Auto-save' },
-        { id:uid(), date:todayOffset(-10), person:'Jane', amount:4500, note:'Manual deposit' },
-        { id:uid(), date:todayOffset(-5), person:'Michael', amount:3000, note:'Freelance bonus' },
-      ],
+      people: [],
+      goals: [],
+      transactions: [],
       scenarioRates: [5,10,15,20]
     };
 
-    let appState = loadState();
+    let appState = JSON.parse(JSON.stringify(defaultState));
 
-    function loadState(){ try{ const raw=localStorage.getItem(STORAGE_KEY); if(raw) return JSON.parse(raw);}catch(e){} return JSON.parse(JSON.stringify(defaultState)); }
-    function saveState(changedSections = ['all']){ 
-      // Add timestamp when saving
-      appState.lastModified = new Date().toISOString();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState)); 
-      
-      // Selective rendering based on what changed
-      if(changedSections.includes('all')) {
+    // Initialize app with authentication
+    async function initializeApp() {
+      try {
+        // Initialize tracker manager
+        const tempApi = new SavingsAPI(auth, 'temp');
+        trackerManager = new TrackerManager(tempApi);
+        currentTrackerId = await trackerManager.initialize();
+        
+        // Initialize API with tracker
+        api = new SavingsAPI(auth, currentTrackerId);
+        trackerManager.api = api;
+        
+        // Initialize tracker UI
+        initializeTrackerUI(trackerManager);
+        
+        // Load data from backend
+        await loadDataFromBackend();
+        
+        // Initial render
         renderAll();
-      } else {
-        updateSections(changedSections);
+      } catch (error) {
+        console.error('App initialization error:', error);
+        alert('Failed to initialize app: ' + error.message);
+      }
+    }
+
+    // Load data from backend API
+    async function loadDataFromBackend() {
+      try {
+        const data = await api.getAllData();
+        
+        // Transform backend data to app state format
+        appState = {
+          settings: {
+            currency: data.settings.currency || 'PHP',
+            locale: data.settings.locale || 'en-PH',
+            currentRatePct: data.settings.currentRatePct || 12,
+            apyPct: data.settings.apyPct || 3,
+            inflationPct: data.settings.inflationPct || 4
+          },
+          people: (data.people || []).map(p => ({
+            id: p.id,
+            name: p.name,
+            currentSavings: p.currentSavings || 0,
+            fixedMonthlyContribution: p.fixedMonthlyContribution || 0,
+            incomes: (p.incomes || []).map(i => ({
+              id: i.id,
+              label: i.label,
+              amount: i.amount,
+              frequency: i.frequency || 'monthly'
+            }))
+          })),
+          goals: (data.goals || []).map(g => ({
+            id: g.id,
+            name: g.name,
+            target: g.target,
+            deadline: g.deadline,
+            owner: g.owner || 'Household',
+            priority: g.priority || 999
+          })),
+          transactions: (data.transactions || []).map(t => ({
+            id: t.id,
+            date: t.date,
+            person: t.person,
+            amount: t.amount,
+            note: t.note || '',
+            goalId: t.goalId || null
+          })),
+          scenarioRates: data.scenarioRates || [5,10,15,20]
+        };
+
+        // If no data, show default sample (for new users)
+        if (appState.people.length === 0 && appState.goals.length === 0) {
+          console.log('No data found, showing default state');
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+        // Continue with default state on error
+      }
+    }
+
+    // Save state to backend
+    async function saveState(changedSections = ['all']) {
+      try {
+        // Update settings
+        await api.updateSettings(appState.settings);
+        
+        // Note: People, goals, transactions are saved individually when modified
+        // This function is called after render, so we don't need to save everything here
+        
+        // Selective rendering based on what changed
+        if(changedSections.includes('all')) {
+          renderAll();
+        } else {
+          updateSections(changedSections);
+        }
+      } catch (error) {
+        console.error('Error saving state:', error);
+        // Still render even if save fails
+        if(changedSections.includes('all')) {
+          renderAll();
+        } else {
+          updateSections(changedSections);
+        }
       }
     }
     
@@ -1071,7 +1242,29 @@
 
     /********** NAV UTILS **********/
     $('#printBtn').addEventListener('click', ()=> window.print());
-    $('#resetBtn').addEventListener('click', ()=> { if(confirm('Reset to sample data?')){ appState = JSON.parse(JSON.stringify(defaultState)); saveState(); } });
+    $('#resetBtn').addEventListener('click', ()=> { if(confirm('Reset to sample data? This will clear all your data.')){ appState = JSON.parse(JSON.stringify(defaultState)); saveState(); } });
+    
+    // Logout
+    $('#logoutBtn').addEventListener('click', async () => {
+      if(confirm('Are you sure you want to logout?')) {
+        try {
+          await auth.signOut();
+          window.location.href = '/login.html';
+        } catch (error) {
+          console.error('Logout error:', error);
+        }
+      }
+    });
+
+    // Listen for tracker changes
+    window.addEventListener('tracker-changed', async () => {
+      if (trackerManager) {
+        api = new SavingsAPI(auth, trackerManager.currentTrackerId);
+        trackerManager.api = api;
+        await loadDataFromBackend();
+        renderAll();
+      }
+    });
     
     // Theme toggle
     function initTheme(){
@@ -1285,15 +1478,22 @@
         `<div class="small mb-2 p-2 rounded" style="background: var(--panel); border: 1px solid rgba(255,255,255,.08);">${insight}</div>`
       ).join('');
     }
-    $('#saveSettingsBtn').addEventListener('click', ()=>{
+    $('#saveSettingsBtn').addEventListener('click', async ()=>{
       const currency = $('#currencyCode').value;
       const locale = $('#localeSelect').value;
       const currentRatePct = Number($('#currentRate').value);
       const apyPct = Number($('#apy').value);
       const inflationPct = Number($('#inflation').value);
       if(currentRatePct<0 || apyPct<0 || inflationPct<0) return alert('Invalid negative value');
-      appState.settings = { currency, locale, currentRatePct, apyPct, inflationPct };
-      saveState();
+      
+      try {
+        appState.settings = { currency, locale, currentRatePct, apyPct, inflationPct };
+        await api.updateSettings(appState.settings);
+        saveState();
+        alert('✅ Settings saved successfully!');
+      } catch (error) {
+        alert('Failed to save settings: ' + error.message);
+      }
     });
     
     // QR Code sync (no account required)
@@ -1833,57 +2033,89 @@ Choose OK to replace, Cancel to merge.`);
 
       // Bind changes
       $all('#peopleList [data-ptype]').forEach(el=>{
-        el.addEventListener('change', e=>{
+        el.addEventListener('change', async e=>{
           const pid = e.target.dataset.pid;
           const type = e.target.dataset.ptype;
           const p = findPersonById(pid); if(!p) return;
-          if(type==='name') { p.name = e.target.value.trim()||'Person'; p.lastModified = new Date().toISOString(); }
-          if(type==='savings'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return alert('Invalid'); p.currentSavings=v; p.lastModified = new Date().toISOString(); }
-          if(type==='fixedContrib'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return alert('Invalid'); p.fixedMonthlyContribution=v; p.lastModified = new Date().toISOString(); }
+          if(type==='name') { p.name = e.target.value.trim()||'Person'; }
+          if(type==='savings'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return alert('Invalid'); p.currentSavings=v; }
+          if(type==='fixedContrib'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return alert('Invalid'); p.fixedMonthlyContribution=v; }
           if(type==='incomeLabel' || type==='incomeAmount' || type==='incomeFreq'){
             const inc = p.incomes.find(i=> i.id===e.target.dataset.iid); if(!inc) return;
             if(type==='incomeLabel') inc.label = e.target.value.trim()||'Income';
             if(type==='incomeAmount'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return alert('Invalid'); inc.amount=v; }
             if(type==='incomeFreq'){ const v=(e.target.value||'monthly').toLowerCase(); inc.frequency = ['monthly','yearly','annual','annually'].includes(v)? v : 'monthly'; }
           }
-          saveState();
+          // Save to backend
+          try {
+            await api.updatePerson(p);
+            saveState();
+          } catch (error) {
+            console.error('Error updating person:', error);
+            saveState(); // Still update UI
+          }
         });
       });
-      $all('#peopleList [data-act="addIncome"]').forEach(btn=> btn.addEventListener('click', ()=>{
+      $all('#peopleList [data-act="addIncome"]').forEach(btn=> btn.addEventListener('click', async ()=>{
         const p = findPersonById(btn.dataset.pid); if(!p) return;
-        p.incomes.push({ id:uid(), label:'Income', amount:0, frequency:'monthly' }); saveState();
+        p.incomes.push({ id:uid(), label:'Income', amount:0, frequency:'monthly' });
+        try {
+          await api.updatePerson(p);
+          saveState();
+        } catch (error) {
+          console.error('Error adding income:', error);
+          saveState();
+        }
       }));
-      $all('#peopleList [data-act="delIncome"]').forEach(btn=> btn.addEventListener('click', ()=>{
+      $all('#peopleList [data-act="delIncome"]').forEach(btn=> btn.addEventListener('click', async ()=>{
         const p = findPersonById(btn.dataset.pid); if(!p) return;
-        p.incomes = (p.incomes||[]).filter(i=> i.id!==btn.dataset.iid); saveState();
+        p.incomes = (p.incomes||[]).filter(i=> i.id!==btn.dataset.iid);
+        try {
+          await api.updatePerson(p);
+          saveState();
+        } catch (error) {
+          console.error('Error deleting income:', error);
+          saveState();
+        }
       }));
-      $all('#peopleList [data-act="delPerson"]').forEach(btn=> btn.addEventListener('click', ()=>{
+      $all('#peopleList [data-act="delPerson"]').forEach(btn=> btn.addEventListener('click', async ()=>{
         if(!confirm('Delete person and their incomes?')) return;
         const pid = btn.dataset.pid;
         const name = (appState.people.find(x=>x.id===pid)||{}).name;
-        appState.people = appState.people.filter(x=> x.id!==pid);
-        // reassign goals/transactions
-        appState.goals = appState.goals.map(g => g.owner===name ? {...g, owner:'Household'} : g);
-        appState.transactions = appState.transactions.map(t => t.person===name ? {...t, person:'(Removed)'} : t);
-        saveState();
+        try {
+          await api.deletePerson(pid);
+          appState.people = appState.people.filter(x=> x.id!==pid);
+          // reassign goals/transactions
+          appState.goals = appState.goals.map(g => g.owner===name ? {...g, owner:'Household'} : g);
+          appState.transactions = appState.transactions.map(t => t.person===name ? {...t, person:'(Removed)'} : t);
+          saveState();
+        } catch (error) {
+          alert('Failed to delete person: ' + error.message);
+        }
       }));
     }
-    $('#addPersonBtn').addEventListener('click', ()=>{
+    $('#addPersonBtn').addEventListener('click', async ()=>{
       const name = ($('#personName').value||'').trim()||'Person';
       const sav = Number($('#personSavings').value||0); if(!isFinite(sav)||sav<0) return alert('Invalid savings');
       const fixedContrib = Number($('#personFixedContribution').value||0); if(!isFinite(fixedContrib)||fixedContrib<0) return alert('Invalid fixed contribution');
       
-      appState.people.push({ 
-        id:uid(), 
-        name, 
-        currentSavings:sav, 
-        fixedMonthlyContribution: fixedContrib,
-        incomes:[], 
-        lastModified: new Date().toISOString() 
-      });
-      
-      $('#personName').value=''; $('#personSavings').value=''; $('#personFixedContribution').value='';
-      saveState();
+      try {
+        const newPerson = {
+          id: uid(),
+          name,
+          currentSavings: sav,
+          fixedMonthlyContribution: fixedContrib,
+          incomes: []
+        };
+        
+        await api.createPerson(newPerson);
+        appState.people.push(newPerson);
+        
+        $('#personName').value=''; $('#personSavings').value=''; $('#personFixedContribution').value='';
+        saveState();
+      } catch (error) {
+        alert('Failed to add person: ' + error.message);
+      }
     });
 
     /********** GOALS **********/
@@ -1961,7 +2193,7 @@ Choose OK to replace, Cancel to merge.`);
 
       // binds
       $all('#goalsList [data-gbind]').forEach(el=>{
-        el.addEventListener('change', e=>{
+        el.addEventListener('change', async e=>{
           const gid=e.target.dataset.gid; const k=e.target.dataset.gbind;
           const g=appState.goals.find(x=>x.id===gid); if(!g) return;
           if(k==='name') g.name=e.target.value.trim()||'Goal';
@@ -1969,24 +2201,46 @@ Choose OK to replace, Cancel to merge.`);
           if(k==='deadline'){ if(!e.target.value) return alert('Invalid'); g.deadline=e.target.value; }
           if(k==='owner') g.owner=e.target.value;
           if(k==='priority'){ const v=Math.max(1, Math.floor(Number(e.target.value||1))); g.priority=v; }
-          saveState();
+          // Save to backend
+          try {
+            await api.updateGoal(g);
+            saveState();
+          } catch (error) {
+            console.error('Error updating goal:', error);
+            saveState(); // Still update UI
+          }
         });
       });
-      $all('#goalsList [data-act="delGoal"]').forEach(btn=> btn.addEventListener('click', ()=>{
-        appState.goals = appState.goals.filter(x=> x.id!==btn.dataset.gid); saveState();
+      $all('#goalsList [data-act="delGoal"]').forEach(btn=> btn.addEventListener('click', async ()=>{
+        const gid = btn.dataset.gid;
+        try {
+          await api.deleteGoal(gid);
+          appState.goals = appState.goals.filter(x=> x.id!==gid);
+          saveState();
+        } catch (error) {
+          alert('Failed to delete goal: ' + error.message);
+        }
       }));
 
       renderGoalsRequired();
     }
-    $('#addGoalBtn').addEventListener('click', ()=>{
+    $('#addGoalBtn').addEventListener('click', async ()=>{
       const name=($('#goalName').value||'').trim()||'Goal';
       const target=Number($('#goalTarget').value); if(!isFinite(target)||target<=0) return alert('Invalid target');
       const deadline=$('#goalDeadline').value; if(!deadline) return alert('Set a deadline');
       const owner=$('#goalOwner').value||'Household';
       const priority=Math.max(1, Math.floor(Number($('#goalPriority').value||1)));
-      appState.goals.push({ id:uid(), name, target, deadline, owner, priority });
-      $('#goalName').value=''; $('#goalTarget').value=''; $('#goalDeadline').value=''; $('#goalPriority').value='1';
-      saveState();
+      
+      try {
+        const newGoal = { id:uid(), name, target, deadline, owner, priority };
+        await api.createGoal(newGoal);
+        appState.goals.push(newGoal);
+        
+        $('#goalName').value=''; $('#goalTarget').value=''; $('#goalDeadline').value=''; $('#goalPriority').value='1';
+        saveState();
+      } catch (error) {
+        alert('Failed to add goal: ' + error.message);
+      }
     });
 
     function renderGoalsRequired(){
@@ -2317,7 +2571,7 @@ Choose OK to replace, Cancel to merge.`);
     });
 
     /********** TRANSACTIONS **********/
-    $('#addTxBtn').addEventListener('click', ()=>{
+    $('#addTxBtn').addEventListener('click', async ()=>{
       const btn = $('#addTxBtn');
       const date = $('#txDate').value || new Date().toISOString().slice(0,10);
       const amt = Number($('#txAmount').value||0); 
@@ -2338,14 +2592,17 @@ Choose OK to replace, Cancel to merge.`);
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Adding...';
       
-      // Add transaction with slight delay for better UX
-      setTimeout(() => {
-        appState.transactions.unshift({ id:uid(), date, person, amount:amt, note, goalId, lastModified: new Date().toISOString() });
+      try {
+        const newTx = { id:uid(), date, person, amount:amt, note, goalId };
+        await api.createTransaction(newTx);
+        
+        appState.transactions.unshift(newTx);
         
         // Update person's current savings
         const p = appState.people.find(x => x.name === person);
         if(p) {
           p.currentSavings = (p.currentSavings || 0) + amt;
+          await api.updatePerson(p); // Save updated person
         }
         
         $('#txAmount').value=''; $('#txNote').value=''; $('#txGoal').value = '';
@@ -2362,7 +2619,11 @@ Choose OK to replace, Cancel to merge.`);
         }, 1000);
         
         saveState();
-      }, 300);
+      } catch (error) {
+        alert('Failed to add transaction: ' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
     });
     
     // Add smart suggestions when amount changes
@@ -3185,9 +3446,6 @@ Choose OK to replace, Cancel to merge.`);
       renderScenarioFilters();
     }
 
-    // Add person / goal handlers already bound above
-    renderAll();
-    
     // Re-render scenario filters when Rate Scenarios tab is opened
     document.addEventListener('shown.bs.tab', function (e) {
       if(e.target.getAttribute('data-bs-target') === '#tabRates') {
@@ -3198,6 +3456,8 @@ Choose OK to replace, Cancel to merge.`);
         }, 100);
       }
     });
+    
+    // Note: renderAll() is called automatically after initializeApp() completes
 
   </script>
 
