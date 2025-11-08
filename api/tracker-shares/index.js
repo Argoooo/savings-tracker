@@ -86,8 +86,8 @@ async function handler(req, res) {
         return res.status(400).json({ error: 'trackerId is required' });
       }
       
-      if (!sharedWithUserId && !sharedWithEmail) {
-        return res.status(400).json({ error: 'sharedWithUserId or sharedWithEmail is required' });
+      if (!sharedWithUserId) {
+        return res.status(400).json({ error: 'sharedWithUserId is required' });
       }
 
       if (!['read', 'write'].includes(permission)) {
@@ -109,20 +109,7 @@ async function handler(req, res) {
         return res.status(403).json({ error: 'Only tracker owner can share' });
       }
 
-      // Find user by email
-      const { data: { users }, error: userError } = await supabase.auth.admin.listUsers();
-      if (userError) throw userError;
-
-      const sharedUser = users.find(u => u.email === sharedWithEmail);
-      if (!sharedUser) {
-        return res.status(404).json({ error: 'User not found with that email' });
-      }
-
-      if (sharedUser.id === userId) {
-        return res.status(400).json({ error: 'Cannot share tracker with yourself' });
-      }
-
-      if (targetUserId === userId) {
+      if (sharedWithUserId === userId) {
         return res.status(400).json({ error: 'Cannot share tracker with yourself' });
       }
 
@@ -131,7 +118,7 @@ async function handler(req, res) {
         .from('tracker_shares')
         .insert({
           tracker_id: trackerId,
-          shared_with_user_id: targetUserId,
+          shared_with_user_id: sharedWithUserId,
           permission,
           shared_by_user_id: userId,
         })
@@ -145,10 +132,7 @@ async function handler(req, res) {
         throw shareError;
       }
 
-      return res.status(201).json({
-        ...share,
-        shared_with_email: sharedWithEmail || 'Unknown',
-      });
+      return res.status(201).json(share);
     } catch (error) {
       console.error('Error creating tracker share:', error);
       return res.status(500).json({ error: 'Failed to create tracker share', details: error.message });
