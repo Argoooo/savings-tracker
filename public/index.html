@@ -40,25 +40,44 @@
     // Initialize Supabase client
     const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
+    console.log('🔍 index.html: Checking auth state...');
+    console.log('🔍 URL:', window.location.href);
+    console.log('🔍 Hash:', window.location.hash);
+
     // Handle OAuth callback first (Supabase uses hash fragments)
-    if (window.location.hash) {
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      console.log('🔍 OAuth callback detected, processing...');
       // Process the OAuth callback
-      supabase.auth.getSession().then(() => {
-        // Clear hash and redirect
-        window.location.replace('/savings_app_v16.html');
-      });
-    } else {
-      // Check authentication status
       supabase.auth.getSession().then(({ data: { session } }) => {
+        console.log('🔍 Session after OAuth:', session ? '✅ Found' : '❌ Not found');
         if (session) {
-          // User is authenticated - redirect to main app
-          window.location.href = '/savings_app_v16.html';
+          // Clear hash and redirect
+          console.log('🔄 Redirecting to savings_app_v16.html...');
+          window.location.replace('/savings_app_v16.html');
         } else {
-          // User is not authenticated - redirect to login
+          console.error('❌ No session after OAuth callback');
           window.location.href = '/login.html';
         }
       }).catch((error) => {
-        console.error('Auth check error:', error);
+        console.error('❌ OAuth callback error:', error);
+        window.location.href = '/login.html';
+      });
+    } else {
+      // Check authentication status
+      console.log('🔍 No OAuth hash, checking existing session...');
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        console.log('🔍 Session check result:', session ? '✅ Authenticated' : '❌ Not authenticated');
+        if (session) {
+          // User is authenticated - redirect to main app
+          console.log('🔄 Redirecting to savings_app_v16.html...');
+          window.location.href = '/savings_app_v16.html';
+        } else {
+          // User is not authenticated - redirect to login
+          console.log('🔄 Redirecting to login.html...');
+          window.location.href = '/login.html';
+        }
+      }).catch((error) => {
+        console.error('❌ Auth check error:', error);
         // On error, redirect to login
         window.location.href = '/login.html';
       });
