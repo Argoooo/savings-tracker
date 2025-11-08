@@ -23,58 +23,44 @@ CREATE INDEX IF NOT EXISTS idx_tracker_shares_shared_by_user_id ON tracker_share
 ALTER TABLE tracker_shares ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for tracker_shares
+-- Note: We avoid checking trackers table to prevent recursion
 CREATE POLICY "Users can view shares of their trackers"
   ON tracker_shares FOR SELECT
   USING (
-    -- Owner can see all shares of their trackers
-    EXISTS (
-      SELECT 1 FROM trackers
-      WHERE trackers.id = tracker_shares.tracker_id
-      AND trackers.user_id = auth.uid()
-    )
+    -- Owner can see all shares they created (shared_by_user_id = owner)
+    shared_by_user_id = auth.uid()
     OR
     -- Shared user can see shares they're part of
-    tracker_shares.shared_with_user_id = auth.uid()
+    shared_with_user_id = auth.uid()
   );
 
 CREATE POLICY "Users can create shares for their trackers"
   ON tracker_shares FOR INSERT
   WITH CHECK (
-    -- Only tracker owner can share
-    EXISTS (
-      SELECT 1 FROM trackers
-      WHERE trackers.id = tracker_shares.tracker_id
-      AND trackers.user_id = auth.uid()
-    )
-    AND tracker_shares.shared_by_user_id = auth.uid()
+    -- Only the person who created the share can insert
+    -- We'll verify ownership in the API layer to avoid recursion
+    shared_by_user_id = auth.uid()
   );
 
 CREATE POLICY "Users can update shares of their trackers"
   ON tracker_shares FOR UPDATE
   USING (
-    -- Only tracker owner can update shares
-    EXISTS (
-      SELECT 1 FROM trackers
-      WHERE trackers.id = tracker_shares.tracker_id
-      AND trackers.user_id = auth.uid()
-    )
+    -- Only the person who created the share can update
+    shared_by_user_id = auth.uid()
   );
 
 CREATE POLICY "Users can delete shares of their trackers"
   ON tracker_shares FOR DELETE
   USING (
-    -- Tracker owner can delete any share
-    EXISTS (
-      SELECT 1 FROM trackers
-      WHERE trackers.id = tracker_shares.tracker_id
-      AND trackers.user_id = auth.uid()
-    )
+    -- Tracker owner (who created the share) can delete
+    shared_by_user_id = auth.uid()
     OR
     -- Shared user can remove themselves
-    tracker_shares.shared_with_user_id = auth.uid()
+    shared_with_user_id = auth.uid()
   );
 
 -- Update RLS policies for trackers to allow shared users
+-- Use a simpler approach that doesn't cause recursion
 DROP POLICY IF EXISTS "Users can view own trackers" ON trackers;
 CREATE POLICY "Users can view own trackers"
   ON trackers FOR SELECT
@@ -82,7 +68,7 @@ CREATE POLICY "Users can view own trackers"
     -- Owner can see their trackers
     auth.uid() = user_id
     OR
-    -- Shared users can see shared trackers
+    -- Shared users can see shared trackers (direct check without recursion)
     EXISTS (
       SELECT 1 FROM tracker_shares
       WHERE tracker_shares.tracker_id = trackers.id
