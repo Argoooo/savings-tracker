@@ -82,23 +82,55 @@ class SavingsAPI {
       throw new Error('Auth manager not available');
     }
     
+    console.log('🔍 getTrackers: Checking auth state...');
+    console.log('🔍 Auth instance:', this.auth);
+    console.log('🔍 Session before wait:', this.auth.session);
+    
     // Wait for session to be available
     let attempts = 0;
     while (!this.auth.session && attempts < 10) {
+      console.log(`⏳ Waiting for session... attempt ${attempts + 1}`);
       await new Promise(resolve => setTimeout(resolve, 100));
-      await this.auth.checkSession();
+      const session = await this.auth.checkSession();
+      if (session) {
+        this.auth.session = session; // Ensure session is set
+        console.log('✅ Session retrieved from checkSession');
+      }
       attempts++;
     }
     
+    // Check if we have a token
+    if (!this.auth.session) {
+      console.error('❌ No session available after waiting');
+      console.error('Auth instance state:', {
+        hasAuth: !!this.auth,
+        hasSupabase: !!this.auth?.supabase,
+        session: this.auth?.session
+      });
+      throw new Error('No authentication session available');
+    }
+    
+    const token = this.auth.getToken();
+    if (!token) {
+      console.error('❌ No token available from auth instance');
+      console.error('Auth instance:', this.auth);
+      console.error('Session:', this.auth.session);
+      throw new Error('No authentication token available');
+    }
+    
+    console.log('✅ Token available, making request to:', url);
     const headers = {
       'Content-Type': 'application/json',
-      ...this.auth?.getHeaders()
+      'Authorization': `Bearer ${token}`
     };
+    
+    console.log('📤 Request headers:', { ...headers, 'Authorization': 'Bearer ***' });
     
     const response = await fetch(url, { headers });
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
-      console.error('Failed to fetch trackers:', response.status, errorText);
+      console.error('❌ Failed to fetch trackers:', response.status, errorText);
+      console.error('Response headers:', Object.fromEntries(response.headers.entries()));
       throw new Error(`Failed to fetch trackers: ${response.status}`);
     }
     return await response.json();
