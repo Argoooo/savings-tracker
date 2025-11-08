@@ -1011,6 +1011,13 @@
     console.log('✅ document accessible:', typeof document !== 'undefined');
     console.log('✅ console accessible:', typeof console !== 'undefined');
 </script>
+<!-- Set Supabase credentials BEFORE loading auth.js -->
+<script>
+  // Set Supabase credentials (must be set before auth.js loads)
+  window.SUPABASE_URL = window.SUPABASE_URL || 'https://uqbcokdpldhrxccyddfz.supabase.co';
+  window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxYmNva2RwbGRocnhjY3lkZGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTM5MzcsImV4cCI6MjA3NzY2OTkzN30.4yknX1zqpfloABqexwzl0ElLYVp4C_atUbNAR8P_1eU';
+  console.log('✅ Supabase credentials set');
+</script>
 <script src="/js/auth.js" onerror="console.error('❌ CRITICAL: Failed to load /js/auth.js - check file exists!')"></script>
 <script src="/js/api.js" onerror="console.error('❌ CRITICAL: Failed to load /js/api.js - check file exists!')"></script>
 <script src="/js/tracker-manager.js" onerror="console.error('❌ CRITICAL: Failed to load /js/tracker-manager.js - check file exists!')"></script>
@@ -1038,7 +1045,7 @@
 </script>
 <script>
     /********** AUTHENTICATION & INITIALIZATION **********/
-    // Set Supabase credentials
+    // Supabase credentials already set above, but ensure they're still available
     window.SUPABASE_URL = window.SUPABASE_URL || 'https://uqbcokdpldhrxccyddfz.supabase.co';
     window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxYmNva2RwbGRocnhjY3lkZGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTM5MzcsImV4cCI6MjA3NzY2OTkzN30.4yknX1zqpfloABqexwzl0ElLYVp4C_atUbNAR8P_1eU';
 
