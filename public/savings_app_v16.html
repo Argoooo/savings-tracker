@@ -1021,22 +1021,17 @@
     console.log('SavingsAPI:', typeof window.SavingsAPI !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
     console.log('TrackerManager:', typeof window.TrackerManager !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
     
-    // Use window references - don't redeclare const/let variables that are already declared in loaded scripts
-    // auth is already declared in auth.js, so just reference it
-    const authInstance = window.auth;
-    const SavingsAPI = window.SavingsAPI;
-    const TrackerManager = window.TrackerManager;
-    
-    // Verify critical dependencies
-    if (typeof authInstance === 'undefined') {
+    // Use window references directly - don't redeclare variables/classes that are already declared in loaded scripts
+    // Just verify they exist, don't create new const/let declarations
+    if (typeof window.auth === 'undefined') {
         console.error('❌ CRITICAL ERROR: auth is not defined!');
         console.error('Check if js/auth.js loaded correctly');
     }
-    if (typeof SavingsAPI === 'undefined') {
+    if (typeof window.SavingsAPI === 'undefined') {
         console.error('❌ CRITICAL ERROR: SavingsAPI is not defined!');
         console.error('Check if js/api.js loaded correctly');
     }
-    if (typeof TrackerManager === 'undefined') {
+    if (typeof window.TrackerManager === 'undefined') {
         console.error('❌ CRITICAL ERROR: TrackerManager is not defined!');
         console.error('Check if js/tracker-manager.js loaded correctly');
     }
@@ -1243,10 +1238,11 @@
     const todayOffset = (d)=>{ const x=new Date(); x.setDate(x.getDate()+d); return x.toISOString().slice(0,10); };
     
     // Global variables for API and tracker
-    // Note: api.js already declares 'let api = null' globally, so we use appApi instead
+    // Note: api.js already declares 'let api = null' and 'let currentTrackerId = null' globally
+    // So we use appApi and appCurrentTrackerId instead
     let appApi = null;
     let trackerManager = null;
-    let currentTrackerId = null;
+    let appCurrentTrackerId = null;
 
     const defaultState = {
       settings: { currency:'PHP', locale:'en-PH', currentRatePct:12, apyPct:3, inflationPct:4 },
@@ -1271,8 +1267,8 @@
         
         // Initialize tracker manager
         updateLoadingStatus('Initializing tracker manager...');
-        const SavingsAPIClass = window.SavingsAPI || SavingsAPI;
-        const TrackerManagerClass = window.TrackerManager || TrackerManager;
+        const SavingsAPIClass = window.SavingsAPI;
+        const TrackerManagerClass = window.TrackerManager;
         
         if (!SavingsAPIClass || !TrackerManagerClass) {
           throw new Error('Required classes not loaded. Check js/api.js and js/tracker-manager.js');
@@ -1280,13 +1276,13 @@
         
         const tempApi = new SavingsAPIClass(authInstance, 'temp');
         trackerManager = new TrackerManagerClass(tempApi);
-        currentTrackerId = await trackerManager.initialize();
-        console.log('✅ Tracker initialized:', currentTrackerId);
+        appCurrentTrackerId = await trackerManager.initialize();
+        console.log('✅ Tracker initialized:', appCurrentTrackerId);
         updateLoadingStatus('Tracker ready');
         
         // Initialize API with tracker
         updateLoadingStatus('Setting up API...');
-        appApi = new SavingsAPIClass(authInstance, currentTrackerId);
+        appApi = new SavingsAPIClass(authInstance, appCurrentTrackerId);
         trackerManager.api = appApi;
         console.log('✅ API initialized');
         
@@ -1580,7 +1576,7 @@
     window.addEventListener('tracker-changed', async () => {
       if (trackerManager) {
         const authInstance = window.auth || (typeof auth !== 'undefined' ? auth : null);
-        const SavingsAPIClass = window.SavingsAPI || SavingsAPI;
+        const SavingsAPIClass = window.SavingsAPI;
         if (authInstance && SavingsAPIClass) {
           appApi = new SavingsAPIClass(authInstance, trackerManager.currentTrackerId);
           trackerManager.api = appApi;
