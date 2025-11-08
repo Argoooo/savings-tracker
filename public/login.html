@@ -466,7 +466,9 @@
       try {
         await auth.signIn(email, password);
         showAlert('Login successful! Redirecting...', 'success');
+        console.log('✅ Login successful, redirecting to /savings_app_v16.html');
         setTimeout(() => {
+          console.log('🔄 Redirecting now...');
           window.location.href = '/savings_app_v16.html';
         }, 1000);
       } catch (error) {
