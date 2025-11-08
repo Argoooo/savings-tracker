@@ -4,7 +4,10 @@ import { getSupabaseClient } from '../lib/db-supabase.js';
 
 async function handler(req, res) {
   const userId = req.user.id;
-  const supabase = getSupabaseClient(req.headers.get('authorization')?.replace('Bearer ', ''));
+  // Vercel uses plain object for headers, not Headers API
+  const authHeader = req.headers?.authorization || req.headers?.Authorization;
+  const token = authHeader?.replace('Bearer ', '') || '';
+  const supabase = getSupabaseClient(token);
 
   if (req.method === 'GET') {
     try {

@@ -11,7 +11,10 @@ async function handler(req, res) {
       return res.status(400).json({ error: 'trackerId is required' });
     }
 
-    const supabase = getSupabaseClient(req.headers.get('authorization')?.replace('Bearer ', ''));
+    // Vercel uses plain object for headers, not Headers API
+    const authHeader = req.headers?.authorization || req.headers?.Authorization;
+    const token = authHeader?.replace('Bearer ', '') || '';
+    const supabase = getSupabaseClient(token);
 
     // Fetch all data in parallel, filtered by tracker_id
     const [settingsResult, peopleResult, goalsResult, transactionsResult, scenarioRatesResult] = await Promise.all([

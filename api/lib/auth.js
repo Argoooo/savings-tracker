@@ -22,8 +22,9 @@ function getSupabaseClient(authToken) {
 // Verify JWT token and get user
 export async function verifyAuth(req) {
   try {
-    // Check for authorization header (case-insensitive)
-    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+    // Vercel serverless functions use plain objects for headers (not Headers API)
+    // Headers are lowercase in Vercel
+    const authHeader = req.headers?.authorization || req.headers?.Authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.error('❌ No authorization header found');
