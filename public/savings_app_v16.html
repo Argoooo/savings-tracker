@@ -473,6 +473,9 @@
     <button id="btn-share-tracker" class="btn btn-outline-primary btn-sm" style="white-space: nowrap;" title="Share this tracker">
       🔗 Share
     </button>
+    <button id="btn-rename-tracker" class="btn btn-outline-secondary btn-sm" style="white-space: nowrap;" title="Rename this tracker">
+      ✏️ Rename
+    </button>
     <button id="btn-delete-tracker" class="btn btn-outline-danger btn-sm" style="white-space: nowrap;" title="Delete this tracker">
       🗑️ Delete
     </button>
@@ -1495,88 +1498,6 @@
           updateMap[section]();
         }
       });
-    }
-    
-    function smartMerge(localData, importedData) {
-      const merged = JSON.parse(JSON.stringify(localData)); // Deep copy
-      
-      // Compare timestamps and merge intelligently
-      if(!localData.lastModified || !importedData.lastModified) {
-        // No timestamps - ask user what to do
-        return null; // Will trigger manual selection
-      }
-      
-      const localTime = new Date(localData.lastModified);
-      const importTime = new Date(importedData.lastModified);
-      
-      console.log('Local timestamp:', localTime);
-      console.log('Import timestamp:', importTime);
-      
-      // Always merge - don't just rely on overall timestamp
-      let hasChanges = false;
-      
-      // Merge settings (take imported if different)
-      if(JSON.stringify(importedData.settings) !== JSON.stringify(localData.settings)) {
-        merged.settings = importedData.settings;
-        hasChanges = true;
-      }
-      
-      // Merge people (by ID, add new ones, update existing if they have newer timestamps)
-      importedData.people?.forEach(importedPerson => {
-        const localPersonIndex = merged.people.findIndex(p => p.id === importedPerson.id);
-        if(localPersonIndex >= 0) {
-          // Person exists - check if imported version is newer
-          const localTime = new Date(merged.people[localPersonIndex].lastModified || '1970-01-01');
-          const importTime = new Date(importedPerson.lastModified || '1970-01-01');
-          if(importTime >= localTime) {
-            merged.people[localPersonIndex] = importedPerson;
-            hasChanges = true;
-          }
-        } else {
-          // New person, add it
-          merged.people.push(importedPerson);
-          hasChanges = true;
-        }
-      });
-      
-      // Merge transactions (add new ones, don't duplicate by ID)
-      importedData.transactions?.forEach(importedTx => {
-        if(!merged.transactions.find(t => t.id === importedTx.id)) {
-          merged.transactions.push(importedTx);
-          hasChanges = true;
-        }
-      });
-      
-      // Merge goals (by ID, add new ones, update existing if newer)
-      importedData.goals?.forEach(importedGoal => {
-        const localGoalIndex = merged.goals.findIndex(g => g.id === importedGoal.id);
-        if(localGoalIndex >= 0) {
-          // Goal exists - check if imported version is newer
-          const localTime = new Date(merged.goals[localGoalIndex].lastModified || '1970-01-01');
-          const importTime = new Date(importedGoal.lastModified || '1970-01-01');
-          if(importTime >= localTime) {
-            merged.goals[localGoalIndex] = importedGoal;
-            hasChanges = true;
-          }
-        } else {
-          // New goal, add it
-          merged.goals.push(importedGoal);
-          hasChanges = true;
-        }
-      });
-      
-      // Merge scenario rates if different
-      if(JSON.stringify(importedData.scenarioRates) !== JSON.stringify(localData.scenarioRates)) {
-        merged.scenarioRates = importedData.scenarioRates;
-        hasChanges = true;
-      }
-      
-      merged.lastModified = new Date().toISOString();
-      
-      console.log('Smart merge hasChanges:', hasChanges);
-      console.log('Final merged data:', merged);
-      
-      return hasChanges ? merged : null; // Return null if no actual changes to trigger manual selection
     }
 
     /********** FINANCE HELPERS **********/
@@ -2721,8 +2642,6 @@
         $('#goalSuggestion').style.display = 'none';
       }
     }
-
-    /********** CHARTS **********/
 
     /********** CHARTS **********/
     let contributionChart, consistencyChart, timelineChart, txChart, txChart2, txStackedChart, monthlyContributionChart;
