@@ -1645,8 +1645,20 @@
         const initializeTrackerUIFn = window.initializeTrackerUI || initializeTrackerUI;
         if (typeof initializeTrackerUIFn === 'function') {
           initializeTrackerUIFn(trackerManager);
-          // Initialize share tracker UI
-          initializeShareTrackerUI(trackerManager, appApi);
+          // Initialize share tracker UI - ensure appApi is ready
+          if (appApi && typeof appApi.getTrackerShares === 'function') {
+            initializeShareTrackerUI(trackerManager, appApi);
+          } else {
+            console.warn('⚠️ appApi not ready for share tracker UI, will retry...');
+            // Retry after a short delay
+            setTimeout(() => {
+              if (appApi && typeof appApi.getTrackerShares === 'function') {
+                initializeShareTrackerUI(trackerManager, appApi);
+              } else {
+                console.error('❌ appApi still not ready after retry');
+              }
+            }, 500);
+          }
           // Initialize rename tracker UI
           initializeRenameTrackerUI(trackerManager);
           // Initialize delete tracker UI
