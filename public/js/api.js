@@ -79,12 +79,13 @@ class SavingsAPI {
     });
   }
 
-  async shareTracker(trackerId, sharedWithUserId, permission = 'read') {
+  async shareTracker(trackerId, sharedWithUserId, sharedWithEmail, permission = 'read') {
     return await this.request('/tracker-shares', {
       method: 'POST',
       body: {
         trackerId,
         sharedWithUserId,
+        sharedWithEmail,
         permission
       }
     });

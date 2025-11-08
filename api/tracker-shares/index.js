@@ -58,11 +58,38 @@ async function handler(req, res) {
 
         if (sharesError) throw sharesError;
 
-        // Return shares (email lookup can be done on frontend if needed)
-        return res.status(200).json(shares || []);
+        // Look up user emails for each share
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseAdmin = createClient(
+          process.env.SUPABASE_URL,
+          process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+        );
+
+        const { data: allUsers } = await supabaseAdmin.auth.admin.listUsers();
+        const usersMap = new Map((allUsers?.users || []).map(u => [u.id, u.email]));
+
+        // Enrich shares with email addresses
+        const sharesWithEmails = (shares || []).map(share => ({
+          ...share,
+          shared_with_email: usersMap.get(share.shared_with_user_id) || null
+        }));
+
+        return res.status(200).json(sharesWithEmails);
       } else {
         // Shared user can only see their own share
-        return res.status(200).json([share]);
+        // Look up email for the share
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseAdmin = createClient(
+          process.env.SUPABASE_URL,
+          process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+        );
+
+        const { data: userData } = await supabaseAdmin.auth.admin.getUserById(share.shared_with_user_id);
+        
+        return res.status(200).json([{
+          ...share,
+          shared_with_email: userData?.user?.email || null
+        }]);
       }
     } catch (error) {
       console.error('Error fetching tracker shares:', error);
@@ -76,8 +103,8 @@ async function handler(req, res) {
         return res.status(400).json({ error: 'trackerId is required' });
       }
       
-      if (!sharedWithUserId) {
-        return res.status(400).json({ error: 'sharedWithUserId is required' });
+      if (!sharedWithUserId && !sharedWithEmail) {
+        return res.status(400).json({ error: 'Either sharedWithUserId or sharedWithEmail is required' });
       }
 
       if (!['read', 'write'].includes(permission)) {
@@ -99,7 +126,33 @@ async function handler(req, res) {
         return res.status(403).json({ error: 'Only tracker owner can share' });
       }
 
-      if (sharedWithUserId === userId) {
+      // If email provided, look up user by email
+      let targetUserId = sharedWithUserId;
+      if (sharedWithEmail && !targetUserId) {
+        // Use service role key to look up user by email
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseAdmin = createClient(
+          process.env.SUPABASE_URL,
+          process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+        );
+
+        const { data: users, error: userError } = await supabaseAdmin.auth.admin.listUsers();
+        
+        if (userError) {
+          console.error('Error looking up user by email:', userError);
+          return res.status(500).json({ error: 'Failed to look up user by email', details: userError.message });
+        }
+
+        const user = users?.users?.find(u => u.email?.toLowerCase() === sharedWithEmail.toLowerCase());
+        
+        if (!user) {
+          return res.status(404).json({ error: `User with email "${sharedWithEmail}" not found. They need to sign up first.` });
+        }
+
+        targetUserId = user.id;
+      }
+
+      if (targetUserId === userId) {
         return res.status(400).json({ error: 'Cannot share tracker with yourself' });
       }
 
@@ -108,7 +161,7 @@ async function handler(req, res) {
         .from('tracker_shares')
         .insert({
           tracker_id: trackerId,
-          shared_with_user_id: sharedWithUserId,
+          shared_with_user_id: targetUserId,
           permission,
           shared_by_user_id: userId,
         })

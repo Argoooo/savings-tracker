@@ -533,10 +533,10 @@
       <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text); font-size: 1.1rem;">Share with User</h4>
       <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
         <input 
-          type="text" 
-          id="share-user-id" 
+          type="email" 
+          id="share-user-email" 
           style="flex: 1; min-width: 200px; padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,.15); background: var(--bg); color: var(--text); font-size: 1rem;"
-          placeholder="Enter user ID (UUID)"
+          placeholder="Enter user email address"
         />
         <select id="share-permission" style="padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,.15); background: var(--bg); color: var(--text); font-size: 1rem;">
           <option value="read">Read Only</option>
@@ -548,7 +548,7 @@
         💡 <strong>Read Only:</strong> User can view the tracker. <strong>Read & Write:</strong> User can also edit data.
       </p>
       <p style="margin: 0.5rem 0 0 0; color: var(--muted); font-size: 0.85rem;">
-        Note: You need the user's UUID to share. This can be found in their Supabase user profile.
+        💬 Enter the email address of the user you want to share with. They must have an account first.
       </p>
     </div>
 
@@ -3910,7 +3910,7 @@ Choose OK to replace, Cancel to merge.`);
       // Add share
       if (addShareBtn) {
         addShareBtn.addEventListener('click', async () => {
-          const userIdInput = document.getElementById('share-user-id');
+          const emailInput = document.getElementById('share-user-email');
           const permissionSelect = document.getElementById('share-permission');
           const currentTracker = trackerManager.getCurrentTracker();
           
@@ -3919,11 +3919,18 @@ Choose OK to replace, Cancel to merge.`);
             return;
           }
           
-          const userId = userIdInput.value.trim();
+          const email = emailInput.value.trim().toLowerCase();
           const permission = permissionSelect.value;
           
-          if (!userId) {
-            showAlert('Please enter a user ID', 'warning');
+          if (!email) {
+            showAlert('Please enter an email address', 'warning');
+            return;
+          }
+          
+          // Basic email validation
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email)) {
+            showAlert('Please enter a valid email address', 'warning');
             return;
           }
           
@@ -3931,13 +3938,14 @@ Choose OK to replace, Cancel to merge.`);
             addShareBtn.disabled = true;
             addShareBtn.textContent = 'Sharing...';
             
-            await api.shareTracker(currentTracker.id, userId, permission);
+            await api.shareTracker(currentTracker.id, null, email, permission);
             showAlert('Tracker shared successfully!', 'success');
-            userIdInput.value = '';
+            emailInput.value = '';
             await loadSharedUsers(currentTracker.id, api);
           } catch (error) {
             console.error('Error sharing tracker:', error);
-            showAlert('Failed to share tracker: ' + (error.message || 'Unknown error'), 'danger');
+            const errorMsg = error.message || 'Unknown error';
+            showAlert('Failed to share tracker: ' + errorMsg, 'danger');
           } finally {
             addShareBtn.disabled = false;
             addShareBtn.textContent = 'Share';
@@ -3965,11 +3973,13 @@ Choose OK to replace, Cancel to merge.`);
             ? '<span style="background: var(--primary); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; margin-left: 0.5rem;">Write</span>'
             : '<span style="background: var(--muted); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; margin-left: 0.5rem;">Read</span>';
           
+          const userDisplay = share.shared_with_email || share.shared_with_user_id || 'Unknown User';
+          
           return `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--panel); border-radius: 8px; margin-bottom: 0.5rem; border: 1px solid rgba(255,255,255,.1);">
               <div>
                 <div style="font-weight: 600; color: var(--text); margin-bottom: 0.25rem;">
-                  ${share.shared_with_user_id || 'Unknown User'}
+                  ${userDisplay}
                   ${permissionBadge}
                 </div>
                 <div style="font-size: 0.85rem; color: var(--muted);">
