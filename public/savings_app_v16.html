@@ -1318,6 +1318,20 @@
       }
     });
 
+    /********** UTILITY FUNCTIONS **********/
+    // Simple alert function for user notifications
+    function showAlert(message, type = 'info') {
+      // For now, use browser alert. Can be enhanced with a toast notification system later
+      const icons = {
+        success: '✅',
+        danger: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+      };
+      const icon = icons[type] || icons.info;
+      alert(`${icon} ${message}`);
+    }
+
     /********** STATE **********/
     const STORAGE_KEY = 'savingsBootstrapV1';
     const uid = () => 'id-' + Math.random().toString(36).slice(2,9);
@@ -3456,6 +3470,10 @@
           return;
         }
         
+        // Store original button state
+        const originalText = deleteBtn.textContent;
+        const originalDisabled = deleteBtn.disabled;
+        
         try {
           deleteBtn.disabled = true;
           deleteBtn.textContent = 'Deleting...';
@@ -3471,8 +3489,10 @@
         } catch (error) {
           console.error('Error deleting tracker:', error);
           showAlert('Failed to delete tracker: ' + (error.message || 'Unknown error'), 'danger');
-          deleteBtn.disabled = false;
-          deleteBtn.textContent = '🗑️ Delete';
+        } finally {
+          // Always reset button state, even if there was an error
+          deleteBtn.disabled = originalDisabled;
+          deleteBtn.textContent = originalText;
         }
       });
     }
