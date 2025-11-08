@@ -89,7 +89,34 @@ class AuthManager {
   }
 
   getToken() {
+    // Check if token is expired and refresh if needed
+    if (this.session) {
+      const expiresAt = this.session.expires_at;
+      const now = Math.floor(Date.now() / 1000);
+      
+      // If token expires in less than 60 seconds, try to refresh
+      if (expiresAt && expiresAt - now < 60) {
+        console.log('🔄 Token expiring soon, refreshing...');
+        this.refreshSession().catch(err => {
+          console.error('Failed to refresh session:', err);
+        });
+      }
+    }
+    
     return this.session?.access_token || null;
+  }
+
+  async refreshSession() {
+    if (!this.supabase) return null;
+    try {
+      const { data, error } = await this.supabase.auth.refreshSession();
+      if (error) throw error;
+      this.session = data.session;
+      return data.session;
+    } catch (error) {
+      console.error('Session refresh error:', error);
+      return null;
+    }
   }
 
   getHeaders() {

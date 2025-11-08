@@ -110,6 +110,16 @@ class SavingsAPI {
       throw new Error('No authentication session available');
     }
     
+    // Try to refresh session if needed before getting token
+    if (this.auth.session) {
+      const expiresAt = this.auth.session.expires_at;
+      const now = Math.floor(Date.now() / 1000);
+      if (expiresAt && expiresAt - now < 60) {
+        console.log('🔄 Token expiring soon, refreshing session...');
+        await this.auth.refreshSession();
+      }
+    }
+    
     const token = this.auth.getToken();
     if (!token) {
       console.error('❌ No token available from auth instance');
@@ -119,6 +129,7 @@ class SavingsAPI {
     }
     
     console.log('✅ Token available, making request to:', url);
+    console.log('🔍 Token expires at:', this.auth.session?.expires_at ? new Date(this.auth.session.expires_at * 1000).toISOString() : 'unknown');
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
