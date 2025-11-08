@@ -58,18 +58,8 @@ async function handler(req, res) {
 
         if (sharesError) throw sharesError;
 
-        // Get user emails for shared users
-        const sharesWithEmails = await Promise.all(
-          (shares || []).map(async (share) => {
-            const { data: user } = await supabase.auth.admin.getUserById(share.shared_with_user_id);
-            return {
-              ...share,
-              shared_with_email: user?.user?.email || 'Unknown',
-            };
-          })
-        );
-
-        return res.status(200).json(sharesWithEmails);
+        // Return shares (email lookup can be done on frontend if needed)
+        return res.status(200).json(shares || []);
       } else {
         // Shared user can only see their own share
         return res.status(200).json([share]);
