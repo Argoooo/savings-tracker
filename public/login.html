@@ -467,7 +467,7 @@
         await auth.signIn(email, password);
         showAlert('Login successful! Redirecting...', 'success');
         setTimeout(() => {
-          window.location.href = '/';
+          window.location.href = '/savings_app_v16.html';
         }, 1000);
       } catch (error) {
         showAlert(error.message || 'Failed to sign in. Please check your credentials.');
@@ -542,7 +542,7 @@
         try {
           const session = await auth.checkSession();
           if (session) {
-            window.location.href = '/';
+            window.location.href = '/savings_app_v16.html';
           }
         } catch (error) {
           // Ignore errors, user can still login
