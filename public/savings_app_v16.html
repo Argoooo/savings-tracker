@@ -1021,13 +1021,14 @@
     console.log('SavingsAPI:', typeof window.SavingsAPI !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
     console.log('TrackerManager:', typeof window.TrackerManager !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
     
-    // Use window references for safety
-    const auth = window.auth;
+    // Use window references - don't redeclare const/let variables that are already declared in loaded scripts
+    // auth is already declared in auth.js, so just reference it
+    const authInstance = window.auth;
     const SavingsAPI = window.SavingsAPI;
     const TrackerManager = window.TrackerManager;
     
     // Verify critical dependencies
-    if (typeof auth === 'undefined') {
+    if (typeof authInstance === 'undefined') {
         console.error('❌ CRITICAL ERROR: auth is not defined!');
         console.error('Check if js/auth.js loaded correctly');
     }
@@ -1200,7 +1201,7 @@
         console.log('🔐 Checking session...');
         
         // Get auth instance
-        const authInstance = window.auth || auth;
+        const authInstance = window.auth || (typeof auth !== 'undefined' ? auth : null);
         if (!authInstance) {
           throw new Error('Auth instance not found!');
         }
@@ -1242,7 +1243,8 @@
     const todayOffset = (d)=>{ const x=new Date(); x.setDate(x.getDate()+d); return x.toISOString().slice(0,10); };
     
     // Global variables for API and tracker
-    let api = null;
+    // Note: api.js already declares 'let api = null' globally, so we use appApi instead
+    let appApi = null;
     let trackerManager = null;
     let currentTrackerId = null;
 
@@ -1262,7 +1264,7 @@
         updateLoadingStatus('Initializing tracker manager...');
         console.log('📦 Initializing tracker manager...');
         // Get auth instance
-        const authInstance = window.auth || auth;
+        const authInstance = window.auth || (typeof auth !== 'undefined' ? auth : null);
         if (!authInstance) {
           throw new Error('Auth instance not available for tracker initialization');
         }
@@ -1284,8 +1286,8 @@
         
         // Initialize API with tracker
         updateLoadingStatus('Setting up API...');
-        api = new SavingsAPIClass(authInstance, currentTrackerId);
-        trackerManager.api = api;
+        appApi = new SavingsAPIClass(authInstance, currentTrackerId);
+        trackerManager.api = appApi;
         console.log('✅ API initialized');
         
         // Initialize tracker UI
@@ -1338,7 +1340,7 @@
     async function loadDataFromBackend() {
       try {
         console.log('📡 Fetching data from API...');
-        const data = await api.getAllData();
+        const data = await appApi.getAllData();
         console.log('📊 Received data:', data);
         
         // Transform backend data to app state format
@@ -1401,7 +1403,7 @@
     async function saveState(changedSections = ['all']) {
       try {
         // Update settings
-        await api.updateSettings(appState.settings);
+        await appApi.updateSettings(appState.settings);
         
         // Note: People, goals, transactions are saved individually when modified
         // This function is called after render, so we don't need to save everything here
@@ -1563,7 +1565,7 @@
     $('#logoutBtn').addEventListener('click', async () => {
       if(confirm('Are you sure you want to logout?')) {
         try {
-          const authInstance = window.auth || auth;
+          const authInstance = window.auth || (typeof auth !== 'undefined' ? auth : null);
           if (authInstance && authInstance.signOut) {
             await authInstance.signOut();
           }
@@ -1577,11 +1579,11 @@
     // Listen for tracker changes
     window.addEventListener('tracker-changed', async () => {
       if (trackerManager) {
-        const authInstance = window.auth || auth;
+        const authInstance = window.auth || (typeof auth !== 'undefined' ? auth : null);
         const SavingsAPIClass = window.SavingsAPI || SavingsAPI;
         if (authInstance && SavingsAPIClass) {
-          api = new SavingsAPIClass(authInstance, trackerManager.currentTrackerId);
-          trackerManager.api = api;
+          appApi = new SavingsAPIClass(authInstance, trackerManager.currentTrackerId);
+          trackerManager.api = appApi;
           await loadDataFromBackend();
           renderAll();
         }
@@ -1810,7 +1812,7 @@
       
       try {
         appState.settings = { currency, locale, currentRatePct, apyPct, inflationPct };
-        await api.updateSettings(appState.settings);
+        await appApi.updateSettings(appState.settings);
         saveState();
         alert('✅ Settings saved successfully!');
       } catch (error) {
@@ -2370,7 +2372,7 @@ Choose OK to replace, Cancel to merge.`);
           }
           // Save to backend
           try {
-            await api.updatePerson(p);
+            await appApi.updatePerson(p);
             saveState();
           } catch (error) {
             console.error('Error updating person:', error);
@@ -2382,7 +2384,7 @@ Choose OK to replace, Cancel to merge.`);
         const p = findPersonById(btn.dataset.pid); if(!p) return;
         p.incomes.push({ id:uid(), label:'Income', amount:0, frequency:'monthly' });
         try {
-          await api.updatePerson(p);
+          await appApi.updatePerson(p);
           saveState();
         } catch (error) {
           console.error('Error adding income:', error);
@@ -2393,7 +2395,7 @@ Choose OK to replace, Cancel to merge.`);
         const p = findPersonById(btn.dataset.pid); if(!p) return;
         p.incomes = (p.incomes||[]).filter(i=> i.id!==btn.dataset.iid);
         try {
-          await api.updatePerson(p);
+          await appApi.updatePerson(p);
           saveState();
         } catch (error) {
           console.error('Error deleting income:', error);
@@ -2405,7 +2407,7 @@ Choose OK to replace, Cancel to merge.`);
         const pid = btn.dataset.pid;
         const name = (appState.people.find(x=>x.id===pid)||{}).name;
         try {
-          await api.deletePerson(pid);
+          await appApi.deletePerson(pid);
           appState.people = appState.people.filter(x=> x.id!==pid);
           // reassign goals/transactions
           appState.goals = appState.goals.map(g => g.owner===name ? {...g, owner:'Household'} : g);
@@ -2430,7 +2432,7 @@ Choose OK to replace, Cancel to merge.`);
           incomes: []
         };
         
-        await api.createPerson(newPerson);
+        await appApi.createPerson(newPerson);
         appState.people.push(newPerson);
         
         $('#personName').value=''; $('#personSavings').value=''; $('#personFixedContribution').value='';
@@ -2525,7 +2527,7 @@ Choose OK to replace, Cancel to merge.`);
           if(k==='priority'){ const v=Math.max(1, Math.floor(Number(e.target.value||1))); g.priority=v; }
           // Save to backend
           try {
-            await api.updateGoal(g);
+            await appApi.updateGoal(g);
             saveState();
           } catch (error) {
             console.error('Error updating goal:', error);
@@ -2536,7 +2538,7 @@ Choose OK to replace, Cancel to merge.`);
       $all('#goalsList [data-act="delGoal"]').forEach(btn=> btn.addEventListener('click', async ()=>{
         const gid = btn.dataset.gid;
         try {
-          await api.deleteGoal(gid);
+          await appApi.deleteGoal(gid);
           appState.goals = appState.goals.filter(x=> x.id!==gid);
           saveState();
         } catch (error) {
@@ -2555,7 +2557,7 @@ Choose OK to replace, Cancel to merge.`);
       
       try {
         const newGoal = { id:uid(), name, target, deadline, owner, priority };
-        await api.createGoal(newGoal);
+        await appApi.createGoal(newGoal);
         appState.goals.push(newGoal);
         
         $('#goalName').value=''; $('#goalTarget').value=''; $('#goalDeadline').value=''; $('#goalPriority').value='1';
@@ -2916,7 +2918,7 @@ Choose OK to replace, Cancel to merge.`);
       
       try {
         const newTx = { id:uid(), date, person, amount:amt, note, goalId };
-        await api.createTransaction(newTx);
+        await appApi.createTransaction(newTx);
         
         appState.transactions.unshift(newTx);
         
@@ -2924,7 +2926,7 @@ Choose OK to replace, Cancel to merge.`);
         const p = appState.people.find(x => x.name === person);
         if(p) {
           p.currentSavings = (p.currentSavings || 0) + amt;
-          await api.updatePerson(p); // Save updated person
+          await appApi.updatePerson(p); // Save updated person
         }
         
         $('#txAmount').value=''; $('#txNote').value=''; $('#txGoal').value = '';
