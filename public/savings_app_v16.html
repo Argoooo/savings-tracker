@@ -939,56 +939,82 @@
 <section class="tab-pane fade" id="tabRates" role="tabpanel">
 
 <!-- Scenario Filters -->
-<div class="card p-4 mb-4">
-<h5 class="mb-3">🎛️ Scenario Configuration</h5>
-<div class="row g-4">
-
-<div class="col-md-4">
-<h6 class="text-primary mb-3">👥 Select Contributors</h6>
-<div id="contributorsFilter">
-<!-- Contributor checkboxes will be populated here -->
-</div>
-</div>
-
-<div class="col-md-4">
-<h6 class="text-success mb-3">🎯 Select Goals</h6>
-<div id="goalsFilter">
-<!-- Goal checkboxes will be populated here -->
-</div>
-</div>
-
-<div class="col-md-4">
-<h6 class="text-warning mb-3">📈 Configuration</h6>
-<div class="mb-3">
-<label class="form-label">Savings Rates (%)</label>
-<input class="form-control" id="scenarioRates" value="5,10,15,20" placeholder="e.g., 5,10,15,20"/>
-</div>
-<div class="d-grid gap-2">
-<button class="btn btn-primary" id="refreshRatesBtn">🔄 Calculate Scenarios</button>
-</div>
-</div>
-
-</div>
+<div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(239, 68, 68, 0.1) 100%); border-radius: 16px;">
+  <div class="card-body p-4">
+    <div class="d-flex align-items-center mb-4">
+      <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #f59e0b, #ef4444); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+        🎛️
+      </div>
+      <div>
+        <h5 class="mb-0" style="font-weight: 600;">Scenario Configuration</h5>
+        <small class="text-muted">Compare different savings rate scenarios</small>
+      </div>
+    </div>
+    <div class="row g-4 mt-2">
+      <div class="col-md-4">
+        <h6 class="text-primary mb-3 fw-semibold">👥 Select Contributors</h6>
+        <div id="contributorsFilter" class="p-3 rounded" style="background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); min-height: 150px;">
+          <!-- Contributor checkboxes will be populated here -->
+        </div>
+      </div>
+      <div class="col-md-4">
+        <h6 class="text-success mb-3 fw-semibold">🎯 Select Goals</h6>
+        <div id="goalsFilter" class="p-3 rounded" style="background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); min-height: 150px;">
+          <!-- Goal checkboxes will be populated here -->
+        </div>
+      </div>
+      <div class="col-md-4">
+        <h6 class="text-warning mb-3 fw-semibold">📈 Configuration</h6>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-uppercase text-muted mb-2" style="letter-spacing: 0.5px; font-size: 0.75rem;">Savings Rates (%)</label>
+          <input class="form-control form-control-lg" id="scenarioRates" value="5,10,15,20" placeholder="e.g., 5,10,15,20" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+          <small class="text-muted" style="font-size: 0.7rem;">Comma-separated list of rates to compare</small>
+        </div>
+        <div class="d-grid">
+          <button class="btn btn-primary btn-lg" id="refreshRatesBtn" style="border-radius: 10px; padding: 0.75rem; font-weight: 600; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">
+            🔄 Calculate Scenarios
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Rate Scenarios Table -->
-<div class="card p-3">
-<div class="table-responsive">
-<table class="table table-hover align-middle" id="ratesTable">
-<thead class="table-dark">
-<tr>
-<th style="width:8%;">Rate</th>
-<th style="width:15%;">Monthly</th>
-<th style="width:15%;">2-Year Value</th>
-<th style="width:15%;">5-Year Value</th>
-<th style="width:12%;">Goals Status</th>
-<th style="width:20%;">Key Impact</th>
-<th style="width:15%;">Recommendation</th>
-</tr>
-</thead>
-<tbody><!-- filled by JS --></tbody>
-</table>
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-transparent border-0 p-4 pb-2">
+    <h5 class="mb-0 fw-semibold">📊 Scenario Comparison</h5>
+    <small class="text-muted">Compare different savings rate scenarios</small>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" id="ratesTable">
+        <thead style="background: var(--panel);">
+          <tr>
+            <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Rate</th>
+            <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Monthly</th>
+            <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">2-Year Value</th>
+            <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">5-Year Value</th>
+            <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Goals Status</th>
+            <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Key Impact</th>
+            <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Recommendation</th>
+          </tr>
+        </thead>
+        <tbody id="ratesTableBody">
+          <!-- Scenarios will be populated here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
+
+<!-- Empty State -->
+<div id="ratesEmptyState" class="text-center py-5" style="display: none;">
+  <div style="width: 120px; height: 120px; margin: 0 auto 2rem; border-radius: 50%; background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.1)); display: flex; align-items: center; justify-content: center; font-size: 3rem;">
+    📈
+  </div>
+  <h4 class="mb-2" style="font-weight: 600;">No scenarios calculated yet</h4>
+  <p class="text-muted mb-4">Select contributors and goals, then click "Calculate Scenarios" to compare different savings rates</p>
 </div>
 
 </section>
@@ -2527,7 +2553,7 @@
 
     /********** RATES (per-person process) - OPTIMIZED TABLE FOR DECISION MAKING **********/
     function renderRatesTable(){
-      const tbody = $('#ratesTable tbody');
+      const tbody = $('#ratesTableBody');
       tbody.innerHTML = '';
 
       const principal = currentSavingsHousehold();
