@@ -256,14 +256,92 @@
     }
     
     /* Navigation improvements */
+    .nav-pills {
+      background: var(--panel);
+      padding: 0.5rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      gap: 0.5rem;
+      display: flex;
+      flex-wrap: wrap;
+    }
     .nav-pills .nav-link {
-      border-radius: 8px;
-      transition: all 0.2s ease;
+      border-radius: 12px;
+      padding: 0.75rem 1.25rem;
       font-weight: 500;
+      font-size: 0.95rem;
+      color: var(--muted);
+      transition: all 0.2s ease;
+      border: 2px solid transparent;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
     .nav-pills .nav-link:hover {
+      color: var(--text);
+      background: rgba(255,255,255,.05);
       transform: translateY(-1px);
-      background: rgba(255,255,255,.08);
+    }
+    .nav-pills .nav-link.active {
+      background: linear-gradient(135deg, var(--brand2), var(--brand));
+      color: white;
+      box-shadow: 0 4px 12px rgba(89, 162, 255, 0.3);
+      border-color: rgba(255,255,255,.2);
+      font-weight: 600;
+    }
+    
+    /* Enhanced KPI Cards */
+    .kpi-card {
+      border-radius: 16px;
+      padding: 1.5rem;
+      background: var(--bg);
+      border: 1px solid rgba(255,255,255,.08);
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--brand2), var(--brand));
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    .kpi-card:hover::before {
+      opacity: 1;
+    }
+    .kpi-card .kpi-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .kpi-card .kpi-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .kpi-card .kpi-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
     }
     
     /* Modular Scenario Builder */
@@ -575,55 +653,87 @@
 
 <main class="container my-3" style="display: none;" id="mainContent">
 <!-- Tabs -->
-<ul class="nav nav-pills no-print" id="mainTabs" role="tablist">
-<li class="nav-item" role="presentation"><button class="nav-link active" data-bs-target="#tabDashboard" data-bs-toggle="pill" role="tab" type="button">📊 Dashboard</button></li>
-<li class="nav-item" role="presentation"><button class="nav-link" data-bs-target="#tabPeople" data-bs-toggle="pill" role="tab" type="button">👥 People</button></li>
-<li class="nav-item" role="presentation"><button class="nav-link" data-bs-target="#tabGoals" data-bs-toggle="pill" role="tab" type="button">🎯 Goals</button></li>
-<li class="nav-item" role="presentation"><button class="nav-link" data-bs-target="#tabRates" data-bs-toggle="pill" role="tab" type="button">📈 Rates</button></li>
-<li class="nav-item" role="presentation"><button class="nav-link" data-bs-target="#tabTx" data-bs-toggle="pill" role="tab" type="button">💳 Transactions</button></li>
-<li class="nav-item" role="presentation"><button class="nav-link" data-bs-target="#tabSettings" data-bs-toggle="pill" role="tab" type="button">⚙️ Settings</button></li>
-</ul>
+<div class="mb-4">
+  <ul class="nav nav-pills no-print" id="mainTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" data-bs-target="#tabDashboard" data-bs-toggle="pill" role="tab" type="button">
+        <span style="font-size: 1.1rem;">📊</span> Dashboard
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-target="#tabPeople" data-bs-toggle="pill" role="tab" type="button">
+        <span style="font-size: 1.1rem;">👥</span> People
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-target="#tabGoals" data-bs-toggle="pill" role="tab" type="button">
+        <span style="font-size: 1.1rem;">🎯</span> Goals
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-target="#tabRates" data-bs-toggle="pill" role="tab" type="button">
+        <span style="font-size: 1.1rem;">📈</span> Rates
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-target="#tabTx" data-bs-toggle="pill" role="tab" type="button">
+        <span style="font-size: 1.1rem;">💳</span> Transactions
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-target="#tabSettings" data-bs-toggle="pill" role="tab" type="button">
+        <span style="font-size: 1.1rem;">⚙️</span> Settings
+      </button>
+    </li>
+  </ul>
+</div>
 <div class="tab-content mt-3">
 <!-- Dashboard -->
 <section class="tab-pane fade show active" id="tabDashboard" role="tabpanel">
 <div class="row g-3">
 <!-- KPIs -->
-<div class="col-12">
-<div class="row g-3">
+<div class="col-12 mb-4">
+<div class="row g-4">
 <div class="col-6 col-lg-3">
-<div class="card p-3 kpi">
-<div class="muted">Total Monthly Income</div>
-<div class="value" id="kpiMonthlyIncome">—</div>
-</div>
-</div>
-<div class="col-6 col-lg-3">
-<div class="card p-3 kpi">
-<div class="muted">Current Savings</div>
-<div class="value" id="kpiCurrentSavings">—</div>
+<div class="kpi-card" style="background: linear-gradient(135deg, rgba(89, 162, 255, 0.1), rgba(138, 125, 255, 0.05));">
+  <div class="kpi-icon" style="background: linear-gradient(135deg, rgba(89, 162, 255, 0.2), rgba(138, 125, 255, 0.2));">💰</div>
+  <div class="kpi-label">Total Monthly Income</div>
+  <div class="kpi-value" id="kpiMonthlyIncome">—</div>
 </div>
 </div>
 <div class="col-6 col-lg-3">
-<div class="card p-3 kpi">
-<div class="muted">Savings Rate</div>
-<div class="value" id="kpiSavingsRate">—</div>
+<div class="kpi-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.05));">
+  <div class="kpi-icon" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.2));">💵</div>
+  <div class="kpi-label">Current Savings</div>
+  <div class="kpi-value" id="kpiCurrentSavings">—</div>
 </div>
 </div>
 <div class="col-6 col-lg-3">
-<div class="card p-3 kpi">
-<div class="muted">APY / Inflation</div>
-<div class="value"><span id="kpiApy">—</span> / <span id="kpiInflation">—</span></div>
+<div class="kpi-card" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.05));">
+  <div class="kpi-icon" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.2));">📊</div>
+  <div class="kpi-label">Savings Rate</div>
+  <div class="kpi-value" id="kpiSavingsRate">—</div>
 </div>
 </div>
 <div class="col-6 col-lg-3">
-<div class="card p-3 kpi">
-<div class="muted">Emergency Fund</div>
-<div class="value" id="kpiEmergencyRatio">—</div>
+<div class="kpi-card" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.05));">
+  <div class="kpi-icon" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2));">📈</div>
+  <div class="kpi-label">APY / Inflation</div>
+  <div class="kpi-value"><span id="kpiApy">—</span> / <span id="kpiInflation">—</span></div>
 </div>
 </div>
 <div class="col-6 col-lg-3">
-<div class="card p-3 kpi">
-<div class="muted">Goals On Track</div>
-<div class="value" id="kpiGoalsOnTrack">—</div>
+<div class="kpi-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.05));">
+  <div class="kpi-icon" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.2));">🛡️</div>
+  <div class="kpi-label">Emergency Fund</div>
+  <div class="kpi-value" id="kpiEmergencyRatio">—</div>
+</div>
+</div>
+<div class="col-6 col-lg-3">
+<div class="kpi-card" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.05));">
+  <div class="kpi-icon" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));">🎯</div>
+  <div class="kpi-label">Goals On Track</div>
+  <div class="kpi-value" id="kpiGoalsOnTrack">—</div>
 </div>
 </div>
 </div>
@@ -884,134 +994,195 @@
 </section>
 <!-- Transactions -->
 <section class="tab-pane fade" id="tabTx" role="tabpanel">
-<div class="row g-3">
-<div class="col-lg-6">
-<div class="card p-3">
-<h6>Add Savings Transaction</h6>
-<div class="row g-3">
-<div class="col-md-4">
-<label class="form-label">Date</label>
-<input class="form-control" id="txDate" type="date"/>
+<!-- Add Transaction Card -->
+<div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border-radius: 16px;">
+  <div class="card-body p-4">
+    <div class="d-flex align-items-center mb-3">
+      <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+        💳
+      </div>
+      <div>
+        <h5 class="mb-0" style="font-weight: 600;">Add Savings Transaction</h5>
+        <small class="text-muted">Record your savings contributions</small>
+      </div>
+    </div>
+    <div class="row g-3 mt-2">
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Date</label>
+        <input class="form-control form-control-lg" id="txDate" type="date" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Amount</label>
+        <input class="form-control form-control-lg" id="txAmount" placeholder="5000" step="0.01" type="number" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Person</label>
+        <select class="form-select form-select-lg" id="txPerson" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"></select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Allocate to Goal</label>
+        <select class="form-select form-select-lg" id="txGoal" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);">
+          <option value="">💰 General Savings</option>
+        </select>
+        <div class="mt-1" id="goalSuggestion" style="display:none;">
+          <small class="text-info">💡 <span id="suggestionText"></span></small>
+        </div>
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Note (Optional)</label>
+        <input class="form-control form-control-lg" id="txNote" placeholder="e.g., Payday auto-save, Bonus, etc." style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+      </div>
+      <div class="col-12 d-grid">
+        <button class="btn btn-primary btn-lg" id="addTxBtn" style="border-radius: 10px; padding: 0.75rem; font-weight: 600; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+          <span style="font-size: 1.2rem; margin-right: 0.5rem;">+</span> Add Transaction
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
-<div class="col-md-4">
-<label class="form-label">Amount</label>
-<input class="form-control" id="txAmount" placeholder="5000" step="0.01" type="number"/>
+
+<!-- Transaction Stats -->
+<div class="row g-4 mb-4">
+  <div class="col-md-4">
+    <div class="kpi-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.05));">
+      <div class="kpi-icon" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.2));">💰</div>
+      <div class="kpi-label">Total Transactions</div>
+      <div class="kpi-value" id="txTotal">—</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="kpi-card" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.05));">
+      <div class="kpi-icon" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.2));">📅</div>
+      <div class="kpi-label">Last 30 Days</div>
+      <div class="kpi-value" id="txLast30">—</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="kpi-card" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.05));">
+      <div class="kpi-icon" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2));">👤</div>
+      <div class="kpi-label">Top Contributor</div>
+      <div class="kpi-value small" id="txTopPerson" style="font-size: 1.1rem;">—</div>
+    </div>
+  </div>
 </div>
-<div class="col-md-4">
-<label class="form-label">Person</label>
-<select class="form-select" id="txPerson"></select>
+
+<!-- Transactions Table -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-transparent border-0 p-4 pb-2">
+    <h5 class="mb-0 fw-semibold">📋 Transaction History</h5>
+    <small class="text-muted">All your savings transactions</small>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" id="txTable">
+        <thead style="background: var(--panel);">
+          <tr>
+            <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Date</th>
+            <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Person</th>
+            <th class="text-end" style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Amount</th>
+            <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Goal</th>
+            <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Note</th>
+            <th style="padding: 1rem; width: 100px;"></th>
+          </tr>
+        </thead>
+        <tbody id="txTableBody">
+          <!-- Transactions will be populated here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
-<div class="col-12">
-<label class="form-label">🎯 Allocate to Goal (Optional)</label>
-<select class="form-select" id="txGoal">
-<option value="">💰 General Savings (No specific goal)</option>
-</select>
-<div class="mt-1" id="goalSuggestion" style="display:none;">
-<small class="text-info">💡 <span id="suggestionText"></span></small>
+
+<!-- Empty State -->
+<div id="txEmptyState" class="text-center py-5" style="display: none;">
+  <div style="width: 120px; height: 120px; margin: 0 auto 2rem; border-radius: 50%; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1)); display: flex; align-items: center; justify-content: center; font-size: 3rem;">
+    💳
+  </div>
+  <h4 class="mb-2" style="font-weight: 600;">No transactions yet</h4>
+  <p class="text-muted mb-4">Start tracking your savings by adding your first transaction</p>
 </div>
-</div>
-<div class="col-12">
-<label class="form-label">Note</label>
-<input class="form-control" id="txNote" placeholder="Payday auto-save"/>
-</div>
-<div class="col-12 d-grid">
-<button class="btn btn-primary" id="addTxBtn">+ Add Transaction</button>
-</div>
-</div>
-</div>
-</div>
-<div class="col-lg-6">
-<div class="row g-3">
-<div class="col-6">
-<div class="card p-3">
-<div class="muted">Total Transactions</div>
-<div class="fs-4 fw-bold" id="txTotal">—</div>
-</div>
-</div>
-<div class="col-6">
-<div class="card p-3">
-<div class="muted">Last 30 Days</div>
-<div class="fs-4 fw-bold" id="txLast30">—</div>
-</div>
-</div>
-<div class="col-6">
-<div class="card p-3">
-<div class="muted">Top Contributor</div>
-<div class="fs-6 fw-semibold" id="txTopPerson">—</div>
-</div>
-</div>
-<div class="col-6"></div>
-</div>
-</div>
-<div class="col-lg-6">
-<div class="card p-3">
-<h6>Recent Totals (6 months)</h6>
-<canvas height="130" id="txChart2"></canvas>
-</div>
-</div>
-<div class="col-lg-6">
-<div class="card p-3">
-<h6>By Month (stacked by person)</h6>
-<canvas height="130" id="txStackedChart"></canvas>
-</div>
-</div>
-<div class="col-12">
-<div class="card p-3">
-<h6>Transactions</h6>
-<div class="table-responsive">
-<table class="table table-sm align-middle" id="txTable">
-<thead><tr><th>Date</th><th>Person</th><th class="text-end">Amount</th><th>Goal</th><th>Note</th><th></th></tr></thead>
-<tbody></tbody>
-</table>
-</div>
-</div>
-</div>
+
+<!-- Transaction Charts -->
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm p-4">
+      <h6 class="mb-3 fw-semibold">📊 Recent Transactions (6 mo)</h6>
+      <canvas height="130" id="txChart"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm p-4">
+      <h6 class="mb-3 fw-semibold">📊 Recent Totals (6 mo)</h6>
+      <canvas height="130" id="txChart2"></canvas>
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="card border-0 shadow-sm p-4">
+      <h6 class="mb-3 fw-semibold">👥 Transactions by Person</h6>
+      <canvas height="130" id="txStackedChart"></canvas>
+    </div>
+  </div>
 </div>
 </section>
 <!-- Settings -->
 <section class="tab-pane fade" id="tabSettings" role="tabpanel">
-<div class="card p-3 mb-3">
-<h6>💾 General Settings</h6>
-<div class="row g-3">
-<div class="col-md-3">
-<label class="form-label">Currency</label>
-<select class="form-select" id="currencyCode">
-<option value="PHP">PHP – Philippine Peso</option>
-<option value="USD">USD – US Dollar</option>
-<option value="EUR">EUR – Euro</option>
-<option value="JPY">JPY – Yen</option>
-<option value="AUD">AUD – Australian Dollar</option>
-<option value="GBP">GBP – British Pound</option>
-<option value="SGD">SGD – Singapore Dollar</option>
-</select>
-</div>
-<div class="col-md-3">
-<label class="form-label">Locale</label>
-<select class="form-select" id="localeSelect">
-<option value="en-PH">English (Philippines)</option>
-<option value="en-US">English (US)</option>
-<option value="en-GB">English (UK)</option>
-<option value="fil-PH">Filipino (Philippines)</option>
-<option value="de-DE">Deutsch (DE)</option>
-<option value="fr-FR">Français (FR)</option>
-</select>
-</div>
-<div class="col-md-2">
-<label class="form-label">Savings Rate (%)</label>
-<input class="form-control" id="currentRate" step="0.1" type="number" value="12"/>
-</div>
-<div class="col-md-2">
-<label class="form-label">APY (%)</label>
-<input class="form-control" id="apy" step="0.1" type="number" value="3"/>
-</div>
-<div class="col-md-2">
-<label class="form-label">Inflation (%)</label>
-<input class="form-control" id="inflation" step="0.1" type="number" value="4"/>
-</div>
-<div class="col-md-12 d-flex justify-content-end">
-<button class="btn btn-primary" id="saveSettingsBtn">💾 Save Settings</button>
-</div>
-</div>
+<div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%); border-radius: 16px;">
+  <div class="card-body p-4">
+    <div class="d-flex align-items-center mb-4">
+      <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #8b5cf6, #ec4899); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+        ⚙️
+      </div>
+      <div>
+        <h5 class="mb-0" style="font-weight: 600;">General Settings</h5>
+        <small class="text-muted">Configure your savings preferences</small>
+      </div>
+    </div>
+    <div class="row g-4 mt-2">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small text-uppercase text-muted mb-2" style="letter-spacing: 0.5px; font-size: 0.75rem;">Currency</label>
+        <select class="form-select form-select-lg" id="currencyCode" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);">
+          <option value="PHP">PHP – Philippine Peso</option>
+          <option value="USD">USD – US Dollar</option>
+          <option value="EUR">EUR – Euro</option>
+          <option value="JPY">JPY – Yen</option>
+          <option value="AUD">AUD – Australian Dollar</option>
+          <option value="GBP">GBP – British Pound</option>
+          <option value="SGD">SGD – Singapore Dollar</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small text-uppercase text-muted mb-2" style="letter-spacing: 0.5px; font-size: 0.75rem;">Locale</label>
+        <select class="form-select form-select-lg" id="localeSelect" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);">
+          <option value="en-PH">English (Philippines)</option>
+          <option value="en-US">English (US)</option>
+          <option value="en-GB">English (UK)</option>
+          <option value="fil-PH">Filipino (Philippines)</option>
+          <option value="de-DE">Deutsch (DE)</option>
+          <option value="fr-FR">Français (FR)</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small text-uppercase text-muted mb-2" style="letter-spacing: 0.5px; font-size: 0.75rem;">Savings Rate (%)</label>
+        <input class="form-control form-control-lg" id="currentRate" step="0.1" type="number" value="12" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+        <small class="text-muted" style="font-size: 0.7rem;">Percentage of income to save</small>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small text-uppercase text-muted mb-2" style="letter-spacing: 0.5px; font-size: 0.75rem;">APY (%)</label>
+        <input class="form-control form-control-lg" id="apy" step="0.1" type="number" value="3" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+        <small class="text-muted" style="font-size: 0.7rem;">Annual Percentage Yield</small>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small text-uppercase text-muted mb-2" style="letter-spacing: 0.5px; font-size: 0.75rem;">Inflation (%)</label>
+        <input class="form-control form-control-lg" id="inflation" step="0.1" type="number" value="4" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+        <small class="text-muted" style="font-size: 0.7rem;">Expected annual inflation rate</small>
+      </div>
+      <div class="col-12 d-flex justify-content-end mt-2">
+        <button class="btn btn-primary btn-lg" id="saveSettingsBtn" style="border-radius: 10px; padding: 0.75rem 2rem; font-weight: 600; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);">
+          💾 Save Settings
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 </section>
 </div>
@@ -1289,7 +1460,7 @@
         
         // Show error but don't hide loading screen
         setTimeout(() => {
-          alert('Failed to initialize app: ' + error.message + '\n\nCheck browser console (F12) for details.');
+          showAlert('Failed to initialize app: ' + error.message + '\n\nCheck browser console (F12) for details.', 'danger');
         }, 500);
       }
     });
@@ -1769,15 +1940,15 @@
       const currentRatePct = Number($('#currentRate').value);
       const apyPct = Number($('#apy').value);
       const inflationPct = Number($('#inflation').value);
-      if(currentRatePct<0 || apyPct<0 || inflationPct<0) return alert('Invalid negative value');
+      if(currentRatePct<0 || apyPct<0 || inflationPct<0) return showAlert('Invalid negative value', 'warning');
       
       try {
         appState.settings = { currency, locale, currentRatePct, apyPct, inflationPct };
         await appApi.updateSettings(appState.settings);
         saveState();
-        alert('✅ Settings saved successfully!');
+        showAlert('✅ Settings saved successfully!', 'success');
       } catch (error) {
-        alert('Failed to save settings: ' + error.message);
+        showAlert('Failed to save settings: ' + error.message, 'danger');
       }
     });
 
@@ -2520,7 +2691,7 @@
     }
     $('#refreshRatesBtn').addEventListener('click', ()=>{
       const nums = ($('#scenarioRates').value||'').split(',').map(s=> Number(s.trim())).filter(x=> isFinite(x)&&x>=0);
-      if(!nums.length) return alert('Enter valid rates (e.g., 5,10,15,20)');
+      if(!nums.length) return showAlert('Enter valid rates (e.g., 5,10,15,20)', 'warning');
       
       // Show loading state
       const btn = $('#refreshRatesBtn');
@@ -2590,7 +2761,7 @@
         
         saveState();
       } catch (error) {
-        alert('Failed to add transaction: ' + error.message);
+        showAlert('Failed to add transaction: ' + error.message, 'danger');
         btn.disabled = false;
         btn.innerHTML = originalText;
       }
@@ -2603,6 +2774,9 @@
     });
 
     function renderTransactions(){
+      const emptyState = $('#txEmptyState');
+      const tableBody = $('#txTableBody');
+      
       // summary
       $('#txTotal').textContent = fmtMoney(txTotal());
       const last30 = appState.transactions.filter(t => (new Date() - new Date(t.date)) <= 30*86400000).reduce((s,t)=> s+t.amount,0);
@@ -2618,43 +2792,63 @@
       // goal select
       renderGoalOptions();
 
+      // Show/hide empty state
+      if (appState.transactions.length === 0) {
+        emptyState.style.display = 'block';
+        $('#txTable').closest('.card').style.display = 'none';
+        return;
+      }
+      
+      emptyState.style.display = 'none';
+      $('#txTable').closest('.card').style.display = 'block';
+
       // table
-      const tb = $('#txTable tbody'); tb.innerHTML='';
+      tableBody.innerHTML='';
       appState.transactions.slice().sort((a,b)=> b.date.localeCompare(a.date)).forEach(t=>{
         const tr = document.createElement('tr');
         const goal = t.goalId ? appState.goals.find(g => g.id === t.goalId) : null;
         const goalDisplay = goal ? 
-          `<span class="badge bg-primary">${goal.name}</span>` : 
-          '<span class="badge bg-secondary">General</span>';
+          `<span class="badge bg-primary bg-opacity-20 text-primary">${goal.name}</span>` : 
+          '<span class="badge bg-secondary bg-opacity-20 text-secondary">General</span>';
           
         tr.innerHTML = `
-          <td>${t.date}</td>
-          <td>${t.person}</td>
-          <td class="text-end">${fmtMoney(t.amount)}</td>
-          <td>${goalDisplay}</td>
-          <td>${t.note||''}</td>
-          <td class="text-end">
-            <div class="d-flex gap-1">
-              <button class="btn btn-sm btn-outline-primary" data-edit-tx="${t.id}">Edit</button>
-              <button class="btn btn-sm btn-ghost" data-del-tx="${t.id}">Delete</button>
+          <td style="padding: 1rem;">${t.date}</td>
+          <td style="padding: 1rem;">${t.person}</td>
+          <td class="text-end" style="padding: 1rem; font-weight: 600; color: var(--text);">${fmtMoney(t.amount)}</td>
+          <td style="padding: 1rem;">${goalDisplay}</td>
+          <td style="padding: 1rem; color: var(--muted);">${t.note||'—'}</td>
+          <td style="padding: 1rem;">
+            <div class="d-flex gap-2 justify-content-end">
+              <button class="btn btn-sm btn-outline-primary" data-edit-tx="${t.id}" style="border-radius: 8px;">✏️</button>
+              <button class="btn btn-sm btn-outline-danger" data-del-tx="${t.id}" style="border-radius: 8px;">🗑️</button>
             </div>
           </td>
         `;
-        tb.appendChild(tr);
+        tableBody.appendChild(tr);
       });
-      $all('[data-del-tx]').forEach(btn=> btn.addEventListener('click', ()=>{
-        // Find the transaction to get person and amount before deleting
+      $all('[data-del-tx]').forEach(btn=> btn.addEventListener('click', async ()=>{
         const tx = appState.transactions.find(x=> x.id===btn.dataset.delTx);
+        if(!confirm(`Delete transaction of ${fmtMoney(tx?.amount || 0)} on ${tx?.date || ''}?`)) return;
+        
         if(tx) {
-          // Update person's current savings (subtract the transaction amount)
           const p = appState.people.find(x => x.name === tx.person);
           if(p) {
             p.currentSavings = (p.currentSavings || 0) - tx.amount;
+            try {
+              await appApi.updatePerson(p);
+            } catch (error) {
+              console.error('Error updating person:', error);
+            }
           }
         }
         
-        appState.transactions = appState.transactions.filter(x=> x.id!==btn.dataset.delTx); 
-        saveState();
+        try {
+          await appApi.deleteTransaction(btn.dataset.delTx);
+          appState.transactions = appState.transactions.filter(x=> x.id!==btn.dataset.delTx); 
+          saveState();
+        } catch (error) {
+          showAlert('Failed to delete transaction: ' + error.message, 'danger');
+        }
       }));
       
       // Add edit transaction functionality
@@ -2730,7 +2924,7 @@
           const newNote = $('#editTxNote').value.trim();
           
           if(!newDate || !isFinite(newAmount) || newAmount <= 0) {
-            alert('Please fill in valid date and amount');
+            showAlert('Please fill in valid date and amount', 'warning');
             return;
           }
           
