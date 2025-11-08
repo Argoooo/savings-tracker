@@ -2574,7 +2574,7 @@
     }
 
     /********** CHARTS **********/
-    let contributionChart, consistencyChart, timelineChart, txChart, txChart2, txStackedChart, monthlyContributionChart;
+    let contributionChart = null, consistencyChart = null, timelineChart = null, txChart = null, txChart2 = null, txStackedChart = null, monthlyContributionChart = null;
     
     function buildContributionChart(){
       const ctx = $('#contributionChart'); if(contributionChart) contributionChart.destroy();
