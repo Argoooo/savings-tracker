@@ -22,21 +22,33 @@ function getSupabaseClient(authToken) {
 // Verify JWT token and get user
 export async function verifyAuth(req) {
   try {
-    const authHeader = req.headers.get('authorization');
+    // Check for authorization header (case-insensitive)
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('❌ No authorization header found');
+      console.error('Available headers:', Object.keys(req.headers || {}));
       return { user: null, error: 'No authorization header' };
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace('Bearer ', '').trim();
+    
+    if (!token) {
+      console.error('❌ Empty token after Bearer prefix');
+      return { user: null, error: 'Empty token' };
+    }
+    
+    console.log('🔍 Verifying token, length:', token.length);
     const supabase = getSupabaseClient(token);
 
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
+      console.error('❌ Token verification failed:', error?.message || 'No user');
       return { user: null, error: error?.message || 'Invalid token' };
     }
 
+    console.log('✅ Token verified, user:', user.id);
     return { user, error: null };
   } catch (error) {
     console.error('Auth verification error:', error);
