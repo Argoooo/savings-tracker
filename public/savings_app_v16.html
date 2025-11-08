@@ -736,37 +736,93 @@
 </section>
 <!-- Goals -->
 <section class="tab-pane fade" id="tabGoals" role="tabpanel">
-<div class="card p-3 mb-3">
-<div class="row g-3">
-<div class="col-md-3">
-<label class="form-label">Goal</label>
-<input class="form-control" id="goalName" placeholder="Emergency Fund"/>
+<!-- Add Goal Card -->
+<div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border-radius: 16px;">
+  <div class="card-body p-4">
+    <div class="d-flex align-items-center mb-3">
+      <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+        🎯
+      </div>
+      <div>
+        <h5 class="mb-0" style="font-weight: 600;">Add New Goal</h5>
+        <small class="text-muted">Set financial targets and track your progress</small>
+      </div>
+    </div>
+    <div class="row g-3 mt-2">
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Goal Name</label>
+        <input class="form-control form-control-lg" id="goalName" placeholder="Emergency Fund" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Target Amount</label>
+        <input class="form-control form-control-lg" id="goalTarget" placeholder="200000" step="0.01" type="number" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Deadline</label>
+        <input class="form-control form-control-lg" id="goalDeadline" type="date" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Owner</label>
+        <select class="form-select form-select-lg" id="goalOwner" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"></select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Priority</label>
+        <input class="form-control form-control-lg" id="goalPriority" min="1" type="number" value="1" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+        <small class="text-muted" style="font-size: 0.7rem;">Lower = Higher priority</small>
+      </div>
+      <div class="col-md-1 d-flex align-items-end">
+        <button class="btn btn-primary w-100" id="addGoalBtn" style="border-radius: 10px; padding: 0.75rem; font-weight: 600; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+          <span style="font-size: 1.2rem; margin-right: 0.25rem;">+</span> Add
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
-<div class="col-md-2">
-<label class="form-label">Target</label>
-<input class="form-control" id="goalTarget" placeholder="200000" step="0.01" type="number"/>
+
+<!-- Goals Filter/Search (shown when there are goals) -->
+<div id="goalsFilterBar" class="card mb-4 border-0 shadow-sm" style="display: none;">
+  <div class="card-body p-3">
+    <div class="row g-3 align-items-center">
+      <div class="col-md-4">
+        <input type="text" class="form-control" id="goalsSearch" placeholder="🔍 Search goals..." style="border-radius: 8px;"/>
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" id="goalsFilterOwner" style="border-radius: 8px;">
+          <option value="">All Owners</option>
+          <option value="Household">Household</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" id="goalsFilterStatus" style="border-radius: 8px;">
+          <option value="">All Status</option>
+          <option value="on-track">✅ On Track</option>
+          <option value="at-risk">⚠️ At Risk</option>
+          <option value="completed">🎉 Completed</option>
+        </select>
+      </div>
+      <div class="col-md-2 text-end">
+        <small class="text-muted" id="goalsCount">0 goals</small>
+      </div>
+    </div>
+  </div>
 </div>
-<div class="col-md-2">
-<label class="form-label">Deadline</label>
-<input class="form-control" id="goalDeadline" type="date"/>
+
+<!-- Goals List - Responsive Grid -->
+<div id="goalsList" class="row g-4"></div>
+
+<!-- Empty State -->
+<div id="goalsEmptyState" class="text-center py-5" style="display: none;">
+  <div style="width: 120px; height: 120px; margin: 0 auto 2rem; border-radius: 50%; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1)); display: flex; align-items: center; justify-content: center; font-size: 3rem;">
+    🎯
+  </div>
+  <h4 class="mb-2" style="font-weight: 600;">No goals set yet</h4>
+  <p class="text-muted mb-4">Create your first financial goal to start tracking your progress</p>
 </div>
-<div class="col-md-3">
-<label class="form-label">Owner</label>
-<select class="form-select" id="goalOwner"></select>
-</div>
-<div class="col-md-1">
-<label class="form-label">Priority</label>
-<input class="form-control" id="goalPriority" min="1" type="number" value="1"/>
-</div>
-<div class="col-md-1 d-flex align-items-end">
-<button class="btn btn-primary w-100" id="addGoalBtn">+ Add</button>
-</div>
-</div>
-</div>
-<div class="row g-3" id="goalsList"></div>
-<div class="card p-3 mt-3">
-<h6 class="mb-2">Monthly Requirement vs Plan</h6>
-<div class="row g-3" id="goalsRequiredList"></div>
+
+<!-- Monthly Requirement Summary -->
+<div class="card p-3 mt-4 border-0 shadow-sm" id="goalsRequiredCard" style="display: none;">
+  <h6 class="mb-3 fw-semibold">📊 Monthly Requirement vs Plan</h6>
+  <div class="row g-3" id="goalsRequiredList"></div>
 </div>
 </section>
 <!-- Rate Scenarios -->
@@ -1980,63 +2036,210 @@
     }
     function renderGoals(){
       renderOwnerOptions();
-      // list
-      const host = $('#goalsList'); host.innerHTML='';
-      appState.goals.slice().sort((a,b)=>(a.priority||999)-(b.priority||999)).forEach(g=>{
+      const host = $('#goalsList'); 
+      const emptyState = $('#goalsEmptyState');
+      const filterBar = $('#goalsFilterBar');
+      const requiredCard = $('#goalsRequiredCard');
+      
+      host.innerHTML='';
+      
+      if (appState.goals.length === 0) {
+        emptyState.style.display = 'block';
+        filterBar.style.display = 'none';
+        requiredCard.style.display = 'none';
+        return;
+      }
+      
+      emptyState.style.display = 'none';
+      filterBar.style.display = 'block';
+      
+      // Update filter options
+      const ownerSelect = $('#goalsFilterOwner');
+      if (ownerSelect) {
+        const currentValue = ownerSelect.value;
+        ownerSelect.innerHTML = '<option value="">All Owners</option><option value="Household">Household</option>' + 
+          appState.people.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+        if (currentValue) ownerSelect.value = currentValue;
+      }
+      
+      // Get filter values
+      const searchTerm = $('#goalsSearch')?.value?.toLowerCase() || '';
+      const filterOwner = $('#goalsFilterOwner')?.value || '';
+      const filterStatus = $('#goalsFilterStatus')?.value || '';
+      
+      const income = householdMonthlyIncome();
+      const monthly = income * (appState.settings.currentRatePct||0)/100;
+      const apy = appState.settings.apyPct||0;
+      
+      // Filter and sort goals
+      let filteredGoals = appState.goals.slice()
+        .filter(g => {
+          if (searchTerm && !g.name.toLowerCase().includes(searchTerm)) return false;
+          if (filterOwner && g.owner !== filterOwner) return false;
+          if (filterStatus) {
+            const monthsLeft = monthsBetween(new Date(), g.deadline);
+            const allocatedSavings = goalAllocatedSavings(g.id);
+            const unallocatedSavings = ownerUnallocatedSavings(g.owner);
+            const cur = allocatedSavings + unallocatedSavings;
+            const eta = monthsToReach({ current: cur, monthlyContribution: monthly, target: g.target, apyPct: apy });
+            const isOnTrack = isFinite(eta) && eta <= monthsLeft;
+            const isCompleted = cur >= g.target;
+            
+            if (filterStatus === 'on-track' && !isOnTrack) return false;
+            if (filterStatus === 'at-risk' && (isOnTrack || isCompleted)) return false;
+            if (filterStatus === 'completed' && !isCompleted) return false;
+          }
+          return true;
+        })
+        .sort((a,b)=>(a.priority||999)-(b.priority||999));
+      
+      // Update count
+      const countEl = $('#goalsCount');
+      if (countEl) {
+        countEl.textContent = `${filteredGoals.length} goal${filteredGoals.length !== 1 ? 's' : ''}`;
+      }
+      
+      filteredGoals.forEach(g=>{
         const monthsLeft = monthsBetween(new Date(), g.deadline);
         const allocatedSavings = goalAllocatedSavings(g.id);
         const totalOwnerSavings = ownerSavings(g.owner);
         const unallocatedSavings = ownerUnallocatedSavings(g.owner);
         
-        // Use allocated savings + available unallocated for progress
-        const cur = allocatedSavings + (g.owner === 'Household' ? unallocatedSavings : unallocatedSavings);
+        const cur = allocatedSavings + unallocatedSavings;
         const pct = Math.min(100, cur/Math.max(1,g.target)*100);
         const need = Math.max(0, g.target - cur);
         const req = monthsLeft? need/monthsLeft : Infinity;
-        const col = document.createElement('div'); col.className='col-12';
+        
+        // Calculate status
+        const eta = monthsToReach({ current: cur, monthlyContribution: monthly, target: g.target, apyPct: apy });
+        const isOnTrack = isFinite(eta) && eta <= monthsLeft;
+        const isCompleted = pct >= 100;
+        const isAtRisk = !isCompleted && (!isFinite(eta) || eta > monthsLeft);
+        
+        // Status colors and badges
+        let statusBadge = '';
+        let statusColor = '';
+        if (isCompleted) {
+          statusBadge = '<span class="badge bg-success bg-opacity-20 text-success">🎉 Completed</span>';
+          statusColor = '#10b981';
+        } else if (isOnTrack) {
+          statusBadge = '<span class="badge bg-primary bg-opacity-20 text-primary">✅ On Track</span>';
+          statusColor = '#3b82f6';
+        } else {
+          statusBadge = '<span class="badge bg-warning bg-opacity-20 text-warning">⚠️ At Risk</span>';
+          statusColor = '#f59e0b';
+        }
+        
+        // Priority indicator
+        const priorityNum = g.priority || 999;
+        const priorityBadge = priorityNum <= 3 ? 
+          `<span class="badge bg-danger bg-opacity-20 text-danger">🔥 High</span>` :
+          priorityNum <= 5 ?
+          `<span class="badge bg-warning bg-opacity-20 text-warning">⚡ Medium</span>` :
+          `<span class="badge bg-secondary bg-opacity-20 text-secondary">📌 Low</span>`;
+        
+        const col = document.createElement('div'); 
+        col.className = 'col-12 col-md-6 col-lg-4'; // Responsive: 1 col mobile, 2 tablet, 3 desktop
+        
         col.innerHTML = `
-          <div class="card p-3">
-            <div class="row g-3 align-items-end">
-              <div class="col-md-3"><label class="form-label">Goal</label><input class="form-control" value="${g.name}" data-gbind="name" data-gid="${g.id}"/></div>
-              <div class="col-md-2"><label class="form-label">Target</label><input class="form-control" type="number" step="0.01" value="${g.target}" data-gbind="target" data-gid="${g.id}"/></div>
-              <div class="col-md-2"><label class="form-label">Deadline</label><input class="form-control" type="date" value="${g.deadline}" data-gbind="deadline" data-gid="${g.id}"/></div>
-              <div class="col-md-3"><label class="form-label">Owner</label>
-                <select class="form-select" data-gbind="owner" data-gid="${g.id}">
-                  <option ${g.owner==='Household'?'selected':''}>Household</option>
-                  ${appState.people.map(p=> `<option ${g.owner===p.name?'selected':''}>${p.name}</option>`).join('')}
-                </select>
+          <div class="card border-0 shadow-sm h-100" style="border-radius: 16px; transition: transform 0.2s, box-shadow 0.2s; background: var(--bg);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.12)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow=''">
+            <div class="card-body p-4">
+              <!-- Header -->
+              <div class="d-flex align-items-start justify-content-between mb-3">
+                <div class="flex-grow-1">
+                  <input class="form-control border-0 p-0 fw-bold fs-5 mb-1" value="${g.name}" data-gbind="name" data-gid="${g.id}" style="background: transparent; font-weight: 600;" placeholder="Goal name"/>
+                  <div class="d-flex gap-2 flex-wrap">
+                    ${statusBadge}
+                    ${priorityBadge}
+                  </div>
+                </div>
+                <button class="btn btn-sm btn-outline-danger p-1" data-act="delGoal" data-gid="${g.id}" style="border-radius: 8px; width: 32px; height: 32px; padding: 0;">
+                  🗑️
+                </button>
               </div>
-              <div class="col-md-1"><label class="form-label">Priority</label><input class="form-control" type="number" value="${g.priority||1}" min="1" data-gbind="priority" data-gid="${g.id}"/></div>
-              <div class="col-md-1 d-grid"><button class="btn btn-outline-danger" data-act="delGoal" data-gid="${g.id}">Delete</button></div>
-            </div>
-            <div class="row g-3 mt-2">
-              <div class="col-md-6">
-                <div class="bar"><div style="width:${pct}%"></div></div>
-                <div class="muted mt-1">
-                  <div><strong>${fmtMoney(cur)} / ${fmtMoney(g.target)}</strong> (${pct.toFixed(0)}%)</div>
-                  <div class="small mt-1">
-                    ${allocatedSavings > 0 ? 
-                      `🎯 Allocated: ${fmtMoney(allocatedSavings)} | 💰 Available: ${fmtMoney(unallocatedSavings)}` : 
-                      `💰 Available from general savings: ${fmtMoney(unallocatedSavings)}`
-                    }
+
+              <!-- Progress Bar -->
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="small text-muted">Progress</span>
+                  <span class="small fw-bold" style="color: ${statusColor};">${pct.toFixed(0)}%</span>
+                </div>
+                <div class="progress" style="height: 8px; border-radius: 10px; background: rgba(255,255,255,.1);">
+                  <div class="progress-bar" style="width: ${pct}%; background: ${statusColor}; border-radius: 10px;"></div>
+                </div>
+                <div class="d-flex justify-content-between mt-1">
+                  <span class="small text-muted">${fmtMoney(cur)}</span>
+                  <span class="small text-muted">${fmtMoney(g.target)}</span>
+                </div>
+              </div>
+
+              <!-- Key Metrics -->
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <div class="p-2 rounded" style="background: rgba(89, 162, 255, 0.1); border: 1px solid rgba(89, 162, 255, 0.2);">
+                    <div class="text-muted small" style="font-size: 0.65rem; text-transform: uppercase;">Time Left</div>
+                    <div class="fw-bold small" style="color: var(--brand);">${formatMonthsToYearsMonths(monthsLeft)}</div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="p-2 rounded" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <div class="text-muted small" style="font-size: 0.65rem; text-transform: uppercase;">Monthly Need</div>
+                    <div class="fw-bold small" style="color: #10b981;">${isFinite(req)?fmtMoney(req):'—'}</div>
                   </div>
                 </div>
               </div>
-              <div class="col-md-3"><span class="chip">Time left: <b>${formatMonthsToYearsMonths(monthsLeft)}</b></span></div>
-              <div class="col-md-3"><span class="chip">Required / mo: <b>${isFinite(req)?fmtMoney(req):'—'}</b></span></div>
+
+              <!-- Editable Fields (Compact) -->
+              <div class="border-top pt-3" style="border-color: rgba(255,255,255,.1) !important;">
+                <div class="row g-2 mb-2">
+                  <div class="col-6">
+                    <label class="form-label small text-muted mb-1" style="font-size: 0.7rem;">Target</label>
+                    <input class="form-control form-control-sm" type="number" step="0.01" value="${g.target}" data-gbind="target" data-gid="${g.id}" style="border-radius: 8px;"/>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small text-muted mb-1" style="font-size: 0.7rem;">Deadline</label>
+                    <input class="form-control form-control-sm" type="date" value="${g.deadline}" data-gbind="deadline" data-gid="${g.id}" style="border-radius: 8px;"/>
+                  </div>
+                </div>
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="form-label small text-muted mb-1" style="font-size: 0.7rem;">Owner</label>
+                    <select class="form-select form-select-sm" data-gbind="owner" data-gid="${g.id}" style="border-radius: 8px;">
+                      <option ${g.owner==='Household'?'selected':''}>Household</option>
+                      ${appState.people.map(p=> `<option ${g.owner===p.name?'selected':''}>${p.name}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small text-muted mb-1" style="font-size: 0.7rem;">Priority</label>
+                    <input class="form-control form-control-sm" type="number" value="${priorityNum}" min="1" data-gbind="priority" data-gid="${g.id}" style="border-radius: 8px;"/>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Savings Breakdown (Compact) -->
+              <div class="mt-3 pt-3 border-top" style="border-color: rgba(255,255,255,.1) !important;">
+                <div class="small text-muted">
+                  ${allocatedSavings > 0 ? 
+                    `🎯 Allocated: ${fmtMoney(allocatedSavings)}<br>` : 
+                    ''
+                  }
+                  💰 Available: ${fmtMoney(unallocatedSavings)}
+                </div>
+              </div>
             </div>
-          </div>`;
+          </div>
+        `;
         host.appendChild(col);
       });
 
-      // binds
+      // Bind changes
       $all('#goalsList [data-gbind]').forEach(el=>{
         el.addEventListener('change', async e=>{
           const gid=e.target.dataset.gid; const k=e.target.dataset.gbind;
           const g=appState.goals.find(x=>x.id===gid); if(!g) return;
           if(k==='name') g.name=e.target.value.trim()||'Goal';
-          if(k==='target'){ const v=Number(e.target.value); if(!isFinite(v)||v<=0) return alert('Invalid'); g.target=v; }
-          if(k==='deadline'){ if(!e.target.value) return alert('Invalid'); g.deadline=e.target.value; }
+          if(k==='target'){ const v=Number(e.target.value); if(!isFinite(v)||v<=0) return showAlert('Invalid target amount', 'warning'); g.target=v; }
+          if(k==='deadline'){ if(!e.target.value) return showAlert('Invalid deadline', 'warning'); g.deadline=e.target.value; }
           if(k==='owner') g.owner=e.target.value;
           if(k==='priority'){ const v=Math.max(1, Math.floor(Number(e.target.value||1))); g.priority=v; }
           // Save to backend
@@ -2051,21 +2254,54 @@
       });
       $all('#goalsList [data-act="delGoal"]').forEach(btn=> btn.addEventListener('click', async ()=>{
         const gid = btn.dataset.gid;
+        if (!confirm(`Delete goal "${appState.goals.find(g => g.id === gid)?.name || ''}"?`)) return;
         try {
           await appApi.deleteGoal(gid);
           appState.goals = appState.goals.filter(x=> x.id!==gid);
           saveState();
         } catch (error) {
-          alert('Failed to delete goal: ' + error.message);
+          showAlert('Failed to delete goal: ' + error.message, 'danger');
         }
       }));
-
-      renderGoalsRequired();
+      
+      // Search and filter handlers (only add once)
+      const searchInput = $('#goalsSearch');
+      const ownerFilter = $('#goalsFilterOwner');
+      const statusFilter = $('#goalsFilterStatus');
+      
+      if (searchInput && !searchInput.dataset.listenerAdded) {
+        searchInput.addEventListener('input', () => renderGoals());
+        searchInput.dataset.listenerAdded = 'true';
+      }
+      if (ownerFilter && !ownerFilter.dataset.listenerAdded) {
+        ownerFilter.addEventListener('change', () => renderGoals());
+        ownerFilter.dataset.listenerAdded = 'true';
+      }
+      if (statusFilter && !statusFilter.dataset.listenerAdded) {
+        statusFilter.addEventListener('change', () => renderGoals());
+        statusFilter.dataset.listenerAdded = 'true';
+      }
+      
+      // Render monthly requirements if there are goals
+      if (appState.goals.length > 0) {
+        renderGoalsRequired();
+        requiredCard.style.display = 'block';
+      } else {
+        requiredCard.style.display = 'none';
+      }
     }
     $('#addGoalBtn').addEventListener('click', async ()=>{
       const name=($('#goalName').value||'').trim()||'Goal';
-      const target=Number($('#goalTarget').value); if(!isFinite(target)||target<=0) return alert('Invalid target');
-      const deadline=$('#goalDeadline').value; if(!deadline) return alert('Set a deadline');
+      const target=Number($('#goalTarget').value); 
+      if(!isFinite(target)||target<=0) {
+        showAlert('Please enter a valid target amount', 'warning');
+        return;
+      }
+      const deadline=$('#goalDeadline').value; 
+      if(!deadline) {
+        showAlert('Please set a deadline', 'warning');
+        return;
+      }
       const owner=$('#goalOwner').value||'Household';
       const priority=Math.max(1, Math.floor(Number($('#goalPriority').value||1)));
       
@@ -2074,10 +2310,15 @@
         await appApi.createGoal(newGoal);
         appState.goals.push(newGoal);
         
-        $('#goalName').value=''; $('#goalTarget').value=''; $('#goalDeadline').value=''; $('#goalPriority').value='1';
+        $('#goalName').value=''; 
+        $('#goalTarget').value=''; 
+        $('#goalDeadline').value=''; 
+        $('#goalPriority').value='1';
+        
+        showAlert(`${name} goal created successfully!`, 'success');
         saveState();
       } catch (error) {
-        alert('Failed to add goal: ' + error.message);
+        showAlert('Failed to add goal: ' + error.message, 'danger');
       }
     });
 
