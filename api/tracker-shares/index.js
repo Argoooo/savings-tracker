@@ -80,10 +80,14 @@ async function handler(req, res) {
     }
   } else if (req.method === 'POST') {
     try {
-      const { trackerId, sharedWithEmail, permission = 'read' } = req.body;
+      const { trackerId, sharedWithUserId, sharedWithEmail, permission = 'read' } = req.body;
 
-      if (!trackerId || !sharedWithEmail) {
-        return res.status(400).json({ error: 'trackerId and sharedWithEmail are required' });
+      if (!trackerId) {
+        return res.status(400).json({ error: 'trackerId is required' });
+      }
+      
+      if (!sharedWithUserId && !sharedWithEmail) {
+        return res.status(400).json({ error: 'sharedWithUserId or sharedWithEmail is required' });
       }
 
       if (!['read', 'write'].includes(permission)) {
@@ -118,12 +122,16 @@ async function handler(req, res) {
         return res.status(400).json({ error: 'Cannot share tracker with yourself' });
       }
 
+      if (targetUserId === userId) {
+        return res.status(400).json({ error: 'Cannot share tracker with yourself' });
+      }
+
       // Create share
       const { data: share, error: shareError } = await supabase
         .from('tracker_shares')
         .insert({
           tracker_id: trackerId,
-          shared_with_user_id: sharedUser.id,
+          shared_with_user_id: targetUserId,
           permission,
           shared_by_user_id: userId,
         })
@@ -139,7 +147,7 @@ async function handler(req, res) {
 
       return res.status(201).json({
         ...share,
-        shared_with_email: sharedWithEmail,
+        shared_with_email: sharedWithEmail || 'Unknown',
       });
     } catch (error) {
       console.error('Error creating tracker share:', error);
