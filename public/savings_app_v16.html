@@ -2984,11 +2984,17 @@
       const mk = months.map(m=> key(m));
       const sums = mk.map(k => appState.transactions.filter(t=> t.date.slice(0,7)===k).reduce((s,t)=> s+t.amount, 0));
 
-      if(txChart) txChart.destroy();
-      txChart = new Chart($('#txChart'), { type:'bar', data:{ labels: monthLabels, datasets:[{label:'Total saved', data:sums, backgroundColor:'#10b981'}] }, options:{plugins:{legend:{display:false}}} });
+      const txChartEl = $('#txChart');
+      if(txChartEl) {
+        if(txChart !== null) txChart.destroy();
+        txChart = new Chart(txChartEl, { type:'bar', data:{ labels: monthLabels, datasets:[{label:'Total saved', data:sums, backgroundColor:'#10b981'}] }, options:{plugins:{legend:{display:false}}} });
+      }
 
-      if(txChart2) txChart2.destroy();
-      txChart2 = new Chart($('#txChart2'), { type:'bar', data:{ labels: monthLabels, datasets:[{label:'Total saved', data:sums, backgroundColor:'#10b981'}] }, options:{plugins:{legend:{display:false}}} });
+      const txChart2El = $('#txChart2');
+      if(txChart2El) {
+        if(txChart2 !== null) txChart2.destroy();
+        txChart2 = new Chart(txChart2El, { type:'bar', data:{ labels: monthLabels, datasets:[{label:'Total saved', data:sums, backgroundColor:'#10b981'}] }, options:{plugins:{legend:{display:false}}} });
+      }
 
       // stacked by person
       const persons = appState.people.map(p=> p.name);
@@ -2998,8 +3004,11 @@
         data: mk.map(k=> appState.transactions.filter(t=> t.person===name && t.date.slice(0,7)===k).reduce((a,b)=> a+b.amount,0)),
         backgroundColor: colors[idx%colors.length]
       }));
-      if(txStackedChart) txStackedChart.destroy();
-      txStackedChart = new Chart($('#txStackedChart'), { type:'bar', data:{ labels: monthLabels, datasets: ds }, options:{ scales:{ x:{stacked:true}, y:{stacked:true} } } });
+      const txStackedChartEl = $('#txStackedChart');
+      if(txStackedChartEl) {
+        if(txStackedChart !== null) txStackedChart.destroy();
+        txStackedChart = new Chart(txStackedChartEl, { type:'bar', data:{ labels: monthLabels, datasets: ds }, options:{ scales:{ x:{stacked:true}, y:{stacked:true} } } });
+      }
     }
 
     /********** CHECKBOX SCENARIO FILTERS **********/
