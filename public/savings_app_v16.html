@@ -687,27 +687,52 @@
 </section>
 <!-- People & Incomes -->
 <section class="tab-pane fade" id="tabPeople" role="tabpanel">
-<div class="card p-3 mb-3">
-<div class="row g-3">
-<div class="col-md-3">
-<label class="form-label">Name</label>
-<input class="form-control" id="personName" placeholder="e.g., Michael"/>
+<!-- Add Person Card -->
+<div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(89, 162, 255, 0.1) 0%, rgba(138, 125, 255, 0.1) 100%); border-radius: 16px;">
+  <div class="card-body p-4">
+    <div class="d-flex align-items-center mb-3">
+      <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, var(--brand2), var(--brand)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+        👤
+      </div>
+      <div>
+        <h5 class="mb-0" style="font-weight: 600;">Add New Contributor</h5>
+        <small class="text-muted">Track savings and income for household members</small>
+      </div>
+    </div>
+    <div class="row g-3 mt-2">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Name</label>
+        <input class="form-control form-control-lg" id="personName" placeholder="e.g., Michael" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Current Savings</label>
+        <input class="form-control form-control-lg" id="personSavings" placeholder="0" step="0.01" type="number" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Fixed Monthly <span class="text-muted">(Optional)</span></label>
+        <input class="form-control form-control-lg" id="personFixedContribution" placeholder="0" step="0.01" type="number" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+        <small class="text-muted" style="font-size: 0.7rem;">Fixed amount regardless of rate</small>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-primary w-100" id="addPersonBtn" style="border-radius: 10px; padding: 0.75rem; font-weight: 600; box-shadow: 0 4px 12px rgba(89, 162, 255, 0.3);">
+          <span style="font-size: 1.2rem; margin-right: 0.25rem;">+</span> Add
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
-<div class="col-md-3">
-<label class="form-label">Current Savings</label>
-<input class="form-control" id="personSavings" placeholder="120000" step="0.01" type="number"/>
+
+<!-- People List -->
+<div id="peopleList" class="row g-4"></div>
+
+<!-- Empty State -->
+<div id="peopleEmptyState" class="text-center py-5" style="display: none;">
+  <div style="width: 120px; height: 120px; margin: 0 auto 2rem; border-radius: 50%; background: linear-gradient(135deg, rgba(89, 162, 255, 0.1), rgba(138, 125, 255, 0.1)); display: flex; align-items: center; justify-content: center; font-size: 3rem;">
+    👥
+  </div>
+  <h4 class="mb-2" style="font-weight: 600;">No contributors yet</h4>
+  <p class="text-muted mb-4">Add household members to start tracking their savings and contributions</p>
 </div>
-<div class="col-md-3">
-<label class="form-label">Fixed Monthly (Optional)</label>
-<input class="form-control" id="personFixedContribution" placeholder="5000" step="0.01" type="number"/>
-<small class="text-muted">Fixed amount regardless of rate</small>
-</div>
-<div class="col-md-3 d-flex align-items-end">
-<button class="btn btn-primary w-100" id="addPersonBtn">+ Add Person</button>
-</div>
-</div>
-</div>
-<div class="row g-3" id="peopleList"></div>
 </section>
 <!-- Goals -->
 <section class="tab-pane fade" id="tabGoals" role="tabpanel">
@@ -1709,59 +1734,123 @@
     function findPersonById(id){ return appState.people.find(x=> x.id===id); }
 
     function renderPeople(){
-      const host = $('#peopleList'); host.innerHTML='';
-      appState.people.forEach(p=>{
-        const col = document.createElement('div'); col.className='col-12';
+      const host = $('#peopleList'); 
+      const emptyState = $('#peopleEmptyState');
+      host.innerHTML='';
+      
+      if (appState.people.length === 0) {
+        emptyState.style.display = 'block';
+        return;
+      }
+      
+      emptyState.style.display = 'none';
+      
+      appState.people.forEach((p, index) => {
+        const col = document.createElement('div'); 
+        col.className = 'col-12 col-lg-6';
+        
         const monthly = totalMonthlyIncome(p);
         const fixedContrib = Number(p.fixedMonthlyContribution || 0);
-        const incomes = (p.incomes||[]).map(i => `
-          <tr>
-            <td><input class="form-control form-control-sm" value="${i.label}" data-ptype="incomeLabel" data-pid="${p.id}" data-iid="${i.id}" /></td>
-            <td class="text-end" style="width:160px"><input class="form-control form-control-sm" type="number" step="0.01" value="${i.amount}" data-ptype="incomeAmount" data-pid="${p.id}" data-iid="${i.id}" /></td>
-            <td style="width:140px">
-              <select class="form-select form-select-sm" data-ptype="incomeFreq" data-pid="${p.id}" data-iid="${i.id}">
-                <option ${i.frequency==='monthly'?'selected':''}>monthly</option>
-                <option ${['yearly','annual','annually'].includes(i.frequency)?'selected':''}>yearly</option>
-              </select>
-            </td>
-            <td class="text-end"><button class="btn btn-sm btn-ghost" data-act="delIncome" data-pid="${p.id}" data-iid="${i.id}">Delete</button></td>
-          </tr>
+        const totalContribution = totalMonthlyContribution(p);
+        const hasIncomes = (p.incomes || []).length > 0;
+        const incomeId = `income-${p.id}`;
+        
+        const incomes = (p.incomes||[]).map((i, idx) => `
+          <div class="income-row mb-2 p-3 rounded" style="background: var(--panel); border: 1px solid rgba(255,255,255,.08); transition: all 0.2s;">
+            <div class="row g-2 align-items-center">
+              <div class="col-4">
+                <input class="form-control form-control-sm" value="${i.label}" placeholder="Income source" data-ptype="incomeLabel" data-pid="${p.id}" data-iid="${i.id}" style="border-radius: 8px; border: 1px solid rgba(255,255,255,.1);"/>
+              </div>
+              <div class="col-4">
+                <input class="form-control form-control-sm text-end" type="number" step="0.01" value="${i.amount}" placeholder="0" data-ptype="incomeAmount" data-pid="${p.id}" data-iid="${i.id}" style="border-radius: 8px; border: 1px solid rgba(255,255,255,.1);"/>
+              </div>
+              <div class="col-3">
+                <select class="form-select form-select-sm" data-ptype="incomeFreq" data-pid="${p.id}" data-iid="${i.id}" style="border-radius: 8px; border: 1px solid rgba(255,255,255,.1);">
+                  <option ${i.frequency==='monthly'?'selected':''}>Monthly</option>
+                  <option ${['yearly','annual','annually'].includes(i.frequency)?'selected':''}>Yearly</option>
+                </select>
+              </div>
+              <div class="col-1 text-end">
+                <button class="btn btn-sm p-0" data-act="delIncome" data-pid="${p.id}" data-iid="${i.id}" style="color: var(--muted); border: none; background: none; opacity: 0.6; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          </div>
         `).join('');
 
         col.innerHTML = `
-          <div class="card p-3">
-            <div class="row g-3 align-items-end">
-              <div class="col-md-4">
-                <label class="form-label">Name</label>
-                <input class="form-control" value="${p.name}" data-ptype="name" data-pid="${p.id}" />
+          <div class="card border-0 shadow-sm h-100" style="border-radius: 16px; transition: transform 0.2s, box-shadow 0.2s; background: var(--bg);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.12)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow=''">
+            <div class="card-body p-4">
+              <!-- Header -->
+              <div class="d-flex align-items-start justify-content-between mb-4">
+                <div class="d-flex align-items-center">
+                  <div class="me-3" style="width: 56px; height: 56px; border-radius: 14px; background: linear-gradient(135deg, rgba(89, 162, 255, 0.2), rgba(138, 125, 255, 0.2)); display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">
+                    👤
+                  </div>
+                  <div>
+                    <input class="form-control border-0 p-0 fw-bold fs-5" value="${p.name}" data-ptype="name" data-pid="${p.id}" style="background: transparent; max-width: 200px; font-weight: 600;" placeholder="Name"/>
+                    <div class="text-muted small mt-1">Contributor</div>
+                  </div>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" data-act="delPerson" data-pid="${p.id}" style="border-radius: 8px; padding: 0.4rem 0.8rem;">
+                  🗑️
+                </button>
               </div>
-              <div class="col-md-2">
-                <label class="form-label">Current Savings</label>
-                <input class="form-control" type="number" step="0.01" value="${p.currentSavings}" data-ptype="savings" data-pid="${p.id}" />
-              </div>
-              <div class="col-md-2">
-                <label class="form-label">Fixed Monthly</label>
-                <input class="form-control" type="number" step="0.01" value="${fixedContrib}" data-ptype="fixedContrib" data-pid="${p.id}" />
-                <small class="text-muted">Fixed amount</small>
-              </div>
-              <div class="col-md-3">
-                <div class="muted">Monthly Contribution</div>
-                <div class="fs-6 fw-bold">
-                  ${monthly > 0 ? `${fmtMoney(monthly)} (rate-based)` : ''}
-                  ${fixedContrib > 0 ? `${fmtMoney(fixedContrib)} (fixed)` : ''}
-                  ${monthly === 0 && fixedContrib === 0 ? 'No income/contribution set' : ''}
+
+              <!-- Stats Grid -->
+              <div class="row g-3 mb-4">
+                <div class="col-6">
+                  <div class="p-3 rounded" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <div class="text-muted small mb-1" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Current Savings</div>
+                    <div class="fw-bold fs-5" style="color: #10b981;">${fmtMoney(p.currentSavings || 0)}</div>
+                    <input class="form-control form-control-sm mt-2" type="number" step="0.01" value="${p.currentSavings || 0}" data-ptype="savings" data-pid="${p.id}" placeholder="0" style="border-radius: 8px; border: 1px solid rgba(255,255,255,.1);"/>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="p-3 rounded" style="background: rgba(89, 162, 255, 0.1); border: 1px solid rgba(89, 162, 255, 0.2);">
+                    <div class="text-muted small mb-1" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Monthly Contribution</div>
+                    <div class="fw-bold fs-5" style="color: var(--brand);">${fmtMoney(totalContribution)}</div>
+                    <div class="small text-muted mt-1">
+                      ${monthly > 0 ? `<span class="badge bg-primary bg-opacity-20 text-primary me-1">Rate: ${fmtMoney(monthly)}</span>` : ''}
+                      ${fixedContrib > 0 ? `<span class="badge bg-success bg-opacity-20 text-success">Fixed: ${fmtMoney(fixedContrib)}</span>` : ''}
+                      ${totalContribution === 0 ? '<span class="text-muted">No contribution set</span>' : ''}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="col-md-2 d-flex gap-2">
-                <button class="btn btn-ghost w-50" data-act="addIncome" data-pid="${p.id}">+ Income</button>
-                <button class="btn btn-outline-danger w-50" data-act="delPerson" data-pid="${p.id}">Delete</button>
+
+              <!-- Fixed Monthly Input -->
+              <div class="mb-4">
+                <label class="form-label small fw-semibold text-muted mb-2" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Fixed Monthly Contribution</label>
+                <div class="input-group">
+                  <input class="form-control" type="number" step="0.01" value="${fixedContrib}" data-ptype="fixedContrib" data-pid="${p.id}" placeholder="0" style="border-radius: 8px; border: 1px solid rgba(255,255,255,.1);"/>
+                  <span class="input-group-text bg-transparent border-0 text-muted small" style="font-size: 0.75rem;">Optional</span>
+                </div>
+                <small class="text-muted" style="font-size: 0.7rem;">Fixed amount regardless of savings rate</small>
               </div>
-            </div>
-            <div class="table-responsive mt-3">
-              <table class="table table-sm align-middle">
-                <thead><tr><th>Label</th><th class="text-end">Amount</th><th>Frequency</th><th></th></tr></thead>
-                <tbody>${incomes || '<tr><td colspan="4" class="muted">No incomes yet.</td></tr>'}</tbody>
-              </table>
+
+              <!-- Income Section -->
+              <div class="border-top pt-4" style="border-color: rgba(255,255,255,.1) !important;">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                  <div>
+                    <h6 class="mb-0 fw-semibold">💰 Income Sources</h6>
+                    <small class="text-muted">${hasIncomes ? `${p.incomes.length} source${p.incomes.length !== 1 ? 's' : ''}` : 'No income sources yet'}</small>
+                  </div>
+                  <button class="btn btn-sm btn-outline-primary" data-act="addIncome" data-pid="${p.id}" style="border-radius: 8px;">
+                    <span style="font-size: 1rem;">+</span> Add Income
+                  </button>
+                </div>
+                <div id="${incomeId}" class="income-list">
+                  ${hasIncomes ? incomes : `
+                    <div class="text-center py-4 text-muted" style="font-size: 0.9rem;">
+                      <div class="mb-2" style="font-size: 2rem;">💼</div>
+                      <div>No income sources yet</div>
+                      <small>Click "Add Income" to get started</small>
+                    </div>
+                  `}
+                </div>
+              </div>
             </div>
           </div>
         `;
@@ -1775,12 +1864,12 @@
           const type = e.target.dataset.ptype;
           const p = findPersonById(pid); if(!p) return;
           if(type==='name') { p.name = e.target.value.trim()||'Person'; }
-          if(type==='savings'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return alert('Invalid'); p.currentSavings=v; }
-          if(type==='fixedContrib'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return alert('Invalid'); p.fixedMonthlyContribution=v; }
+          if(type==='savings'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return showAlert('Invalid savings amount', 'warning'); p.currentSavings=v; }
+          if(type==='fixedContrib'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return showAlert('Invalid fixed contribution', 'warning'); p.fixedMonthlyContribution=v; }
           if(type==='incomeLabel' || type==='incomeAmount' || type==='incomeFreq'){
             const inc = p.incomes.find(i=> i.id===e.target.dataset.iid); if(!inc) return;
             if(type==='incomeLabel') inc.label = e.target.value.trim()||'Income';
-            if(type==='incomeAmount'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return alert('Invalid'); inc.amount=v; }
+            if(type==='incomeAmount'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return showAlert('Invalid income amount', 'warning'); inc.amount=v; }
             if(type==='incomeFreq'){ const v=(e.target.value||'monthly').toLowerCase(); inc.frequency = ['monthly','yearly','annual','annually'].includes(v)? v : 'monthly'; }
           }
           // Save to backend
@@ -1827,7 +1916,7 @@
           appState.transactions = appState.transactions.map(t => t.person===name ? {...t, person:'(Removed)'} : t);
           saveState();
         } catch (error) {
-          alert('Failed to delete person: ' + error.message);
+          showAlert('Failed to delete person: ' + error.message, 'danger');
         }
       }));
     }
