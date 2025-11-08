@@ -1922,8 +1922,16 @@
     }
     $('#addPersonBtn').addEventListener('click', async ()=>{
       const name = ($('#personName').value||'').trim()||'Person';
-      const sav = Number($('#personSavings').value||0); if(!isFinite(sav)||sav<0) return alert('Invalid savings');
-      const fixedContrib = Number($('#personFixedContribution').value||0); if(!isFinite(fixedContrib)||fixedContrib<0) return alert('Invalid fixed contribution');
+      const sav = Number($('#personSavings').value||0); 
+      if(!isFinite(sav)||sav<0) {
+        showAlert('Please enter a valid savings amount', 'warning');
+        return;
+      }
+      const fixedContrib = Number($('#personFixedContribution').value||0); 
+      if(!isFinite(fixedContrib)||fixedContrib<0) {
+        showAlert('Please enter a valid fixed contribution amount', 'warning');
+        return;
+      }
       
       try {
         const newPerson = {
@@ -1937,10 +1945,14 @@
         await appApi.createPerson(newPerson);
         appState.people.push(newPerson);
         
-        $('#personName').value=''; $('#personSavings').value=''; $('#personFixedContribution').value='';
+        $('#personName').value=''; 
+        $('#personSavings').value=''; 
+        $('#personFixedContribution').value='';
+        
+        showAlert(`${name} added successfully!`, 'success');
         saveState();
       } catch (error) {
-        alert('Failed to add person: ' + error.message);
+        showAlert('Failed to add person: ' + error.message, 'danger');
       }
     });
 
