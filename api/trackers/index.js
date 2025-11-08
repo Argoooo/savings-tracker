@@ -14,7 +14,7 @@ async function handler(req, res) {
       const { data: trackers, error } = await supabase
         .from('trackers')
         .select('*')
-        .eq('user_id', userId)
+        .or(`user_id.eq.${userId},id.in.(SELECT tracker_id FROM tracker_shares WHERE shared_with_user_id.eq.${userId})`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -24,7 +24,8 @@ async function handler(req, res) {
         name: t.name,
         description: t.description || '',
         createdAt: t.created_at,
-        updatedAt: t.updated_at
+        updatedAt: t.updated_at,
+        isOwner: t.user_id === userId,
       }));
 
       res.status(200).json(trackersList);
