@@ -496,14 +496,39 @@
   <div id="loadingStatus" style="color: var(--muted); font-size: 0.875rem;"></div>
 </div>
 
-<nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom" style="display: none;" id="mainNav">
+<nav class="navbar navbar-expand-lg border-bottom" style="display: none; background: var(--panel); border-color: rgba(255,255,255,.08) !important;" id="mainNav">
 <div class="container-fluid">
-<a class="navbar-brand fw-bold" href="#">💰 Savings Dashboard</a>
-<div class="d-flex gap-1 no-print btn-group-mobile">
-<button class="btn btn-ghost btn-sm" id="printBtn">🖨️</button>
-<button class="btn btn-outline-secondary btn-sm" id="themeToggle" title="Toggle theme">🌓</button>
-<button class="btn btn-outline-danger btn-sm" id="resetBtn">↺</button>
-<button class="btn btn-outline-primary btn-sm" id="logoutBtn" title="Logout">🚪</button>
+<a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#" style="color: var(--text); font-size: 1.25rem;">
+  <span style="font-size: 1.5rem;">💰</span>
+  <span>Savings Dashboard</span>
+</a>
+<div class="d-flex align-items-center gap-3">
+  <!-- User Email Display -->
+  <div class="d-none d-md-flex align-items-center gap-2 px-3 py-2 rounded" style="background: rgba(89, 162, 255, 0.1); border: 1px solid rgba(89, 162, 255, 0.2);">
+    <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--brand2), var(--brand)); display: flex; align-items: center; justify-content: center; font-size: 0.875rem; font-weight: 600; color: white;">
+      <span id="userInitial">U</span>
+    </div>
+    <div>
+      <div style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Logged in as</div>
+      <div id="userEmail" style="font-size: 0.875rem; font-weight: 500; color: var(--text);">Loading...</div>
+    </div>
+  </div>
+  
+  <!-- Action Buttons -->
+  <div class="d-flex gap-1 no-print btn-group-mobile">
+    <button class="btn btn-outline-secondary btn-sm" id="printBtn" title="Print" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
+      🖨️
+    </button>
+    <button class="btn btn-outline-secondary btn-sm" id="themeToggle" title="Toggle theme" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
+      🌓
+    </button>
+    <button class="btn btn-outline-danger btn-sm" id="resetBtn" title="Reset" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
+      ↺
+    </button>
+    <button class="btn btn-outline-primary btn-sm" id="logoutBtn" title="Logout" style="border-radius: 8px; padding: 0.5rem 0.75rem;">
+      🚪 Logout
+    </button>
+  </div>
 </div>
 </div>
 </nav>
@@ -1340,6 +1365,8 @@
             if (session) {
               authInstance.session = session;
               console.log('✅ Session checked and set');
+              // Update user email display
+              updateUserEmailDisplay();
             }
             updateLoadingStatus('Auth ready');
             callback();
@@ -1477,6 +1504,9 @@
         await initializeApp();
         console.log('✅ App initialized successfully!');
         
+        // Update user email display
+        updateUserEmailDisplay();
+        
         // Hide loading screen after successful initialization
         hideLoadingScreen();
       } catch (error) {
@@ -1503,6 +1533,53 @@
       };
       const icon = icons[type] || icons.info;
       alert(`${icon} ${message}`);
+    }
+    
+    // Update user email display in navbar
+    function updateUserEmailDisplay() {
+      const userEmailEl = $('#userEmail');
+      const userInitialEl = $('#userInitial');
+      
+      if (!userEmailEl || !userInitialEl) return;
+      
+      try {
+        const authInstance = window.auth;
+        if (!authInstance || !authInstance.session) {
+          userEmailEl.textContent = 'Not logged in';
+          userInitialEl.textContent = '?';
+          return;
+        }
+        
+        // Get user email from session
+        const user = authInstance.session.user;
+        if (user && user.email) {
+          userEmailEl.textContent = user.email;
+          // Extract first letter for initial
+          const initial = user.email.charAt(0).toUpperCase();
+          userInitialEl.textContent = initial;
+        } else {
+          // Try to get from supabase directly
+          if (authInstance.supabase) {
+            authInstance.supabase.auth.getUser().then(({ data: { user } }) => {
+              if (user && user.email) {
+                userEmailEl.textContent = user.email;
+                const initial = user.email.charAt(0).toUpperCase();
+                userInitialEl.textContent = initial;
+              }
+            }).catch(() => {
+              userEmailEl.textContent = 'Unable to load';
+              userInitialEl.textContent = '?';
+            });
+          } else {
+            userEmailEl.textContent = 'Loading...';
+            userInitialEl.textContent = 'U';
+          }
+        }
+      } catch (error) {
+        console.error('Error updating user email display:', error);
+        userEmailEl.textContent = 'Error loading';
+        userInitialEl.textContent = '?';
+      }
     }
 
     /********** STATE **********/
