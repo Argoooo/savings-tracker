@@ -475,6 +475,9 @@
     <select id="tracker-select" style="flex: 1; max-width: 300px; padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,.15); font-size: 0.9rem; background: var(--bg); color: var(--text);">
       <option>Loading trackers...</option>
     </select>
+    <button id="btn-share-tracker" class="btn btn-outline-primary btn-sm" style="white-space: nowrap;" title="Share this tracker">
+      🔗 Share
+    </button>
     <button id="btn-new-tracker" class="btn btn-primary btn-sm" style="white-space: nowrap;">
       + New Tracker
     </button>
@@ -514,6 +517,51 @@
     <div style="display: flex; gap: 1rem; justify-content: flex-end;">
       <button id="btn-cancel-tracker" class="btn btn-secondary">Cancel</button>
       <button id="btn-create-tracker" class="btn btn-primary">Create Tracker</button>
+    </div>
+  </div>
+</div>
+
+<!-- Share Tracker Modal -->
+<div id="share-tracker-modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+  <div style="background-color: var(--bg); margin: 3% auto; padding: 2rem; border-radius: 12px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,.15);">
+    <h3 style="margin-top: 0; margin-bottom: 1.5rem; color: var(--text);">
+      🔗 Share Tracker: <span id="share-tracker-name" style="color: var(--primary);"></span>
+    </h3>
+    
+    <!-- Share with new user -->
+    <div style="margin-bottom: 2rem; padding: 1.5rem; background: var(--panel); border-radius: 8px; border: 1px solid rgba(255,255,255,.1);">
+      <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text); font-size: 1.1rem;">Share with User</h4>
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+        <input 
+          type="text" 
+          id="share-user-id" 
+          style="flex: 1; min-width: 200px; padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,.15); background: var(--bg); color: var(--text); font-size: 1rem;"
+          placeholder="Enter user ID (UUID)"
+        />
+        <select id="share-permission" style="padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,.15); background: var(--bg); color: var(--text); font-size: 1rem;">
+          <option value="read">Read Only</option>
+          <option value="write">Read & Write</option>
+        </select>
+        <button id="btn-add-share" class="btn btn-primary">Share</button>
+      </div>
+      <p style="margin: 0; color: var(--muted); font-size: 0.9rem;">
+        💡 <strong>Read Only:</strong> User can view the tracker. <strong>Read & Write:</strong> User can also edit data.
+      </p>
+      <p style="margin: 0.5rem 0 0 0; color: var(--muted); font-size: 0.85rem;">
+        Note: You need the user's UUID to share. This can be found in their Supabase user profile.
+      </p>
+    </div>
+
+    <!-- Shared users list -->
+    <div>
+      <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text); font-size: 1.1rem;">Shared With</h4>
+      <div id="shared-users-list" style="min-height: 100px;">
+        <p style="color: var(--muted); text-align: center; padding: 2rem;">Loading shares...</p>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,.1);">
+      <button id="btn-close-share-modal" class="btn btn-secondary">Close</button>
     </div>
   </div>
 </div>
@@ -1325,6 +1373,8 @@
         const initializeTrackerUIFn = window.initializeTrackerUI || initializeTrackerUI;
         if (typeof initializeTrackerUIFn === 'function') {
           initializeTrackerUIFn(trackerManager);
+          // Initialize share tracker UI
+          initializeShareTrackerUI(trackerManager, appApi);
           // Show tracker switcher
           const trackerSwitcher = document.getElementById('trackerSwitcher');
           if (trackerSwitcher) {
@@ -3811,6 +3861,182 @@ Choose OK to replace, Cancel to merge.`);
     });
     
     // Note: renderAll() is called automatically after initializeApp() completes
+
+    // Share Tracker UI Functions
+    function initializeShareTrackerUI(trackerManager, api) {
+      const shareBtn = document.getElementById('btn-share-tracker');
+      const shareModal = document.getElementById('share-tracker-modal');
+      const closeShareBtn = document.getElementById('btn-close-share-modal');
+      const addShareBtn = document.getElementById('btn-add-share');
+      
+      if (!shareBtn || !shareModal) {
+        console.warn('Share tracker UI elements not found');
+        return;
+      }
+
+      // Open share modal
+      shareBtn.addEventListener('click', () => {
+        const currentTracker = trackerManager.getCurrentTracker();
+        if (!currentTracker) {
+          showAlert('No tracker selected', 'danger');
+          return;
+        }
+        
+        // Check if user is owner
+        if (!currentTracker.isOwner) {
+          showAlert('Only tracker owners can share', 'warning');
+          return;
+        }
+        
+        document.getElementById('share-tracker-name').textContent = currentTracker.name;
+        shareModal.style.display = 'block';
+        loadSharedUsers(currentTracker.id, api);
+      });
+
+      // Close share modal
+      if (closeShareBtn) {
+        closeShareBtn.addEventListener('click', () => {
+          shareModal.style.display = 'none';
+        });
+      }
+
+      // Close on outside click
+      shareModal.addEventListener('click', (e) => {
+        if (e.target === shareModal) {
+          shareModal.style.display = 'none';
+        }
+      });
+
+      // Add share
+      if (addShareBtn) {
+        addShareBtn.addEventListener('click', async () => {
+          const userIdInput = document.getElementById('share-user-id');
+          const permissionSelect = document.getElementById('share-permission');
+          const currentTracker = trackerManager.getCurrentTracker();
+          
+          if (!currentTracker) {
+            showAlert('No tracker selected', 'danger');
+            return;
+          }
+          
+          const userId = userIdInput.value.trim();
+          const permission = permissionSelect.value;
+          
+          if (!userId) {
+            showAlert('Please enter a user ID', 'warning');
+            return;
+          }
+          
+          try {
+            addShareBtn.disabled = true;
+            addShareBtn.textContent = 'Sharing...';
+            
+            await api.shareTracker(currentTracker.id, userId, permission);
+            showAlert('Tracker shared successfully!', 'success');
+            userIdInput.value = '';
+            await loadSharedUsers(currentTracker.id, api);
+          } catch (error) {
+            console.error('Error sharing tracker:', error);
+            showAlert('Failed to share tracker: ' + (error.message || 'Unknown error'), 'danger');
+          } finally {
+            addShareBtn.disabled = false;
+            addShareBtn.textContent = 'Share';
+          }
+        });
+      }
+    }
+
+    async function loadSharedUsers(trackerId, api) {
+      const listContainer = document.getElementById('shared-users-list');
+      if (!listContainer) return;
+      
+      try {
+        listContainer.innerHTML = '<p style="color: var(--muted); text-align: center; padding: 2rem;">Loading shares...</p>';
+        
+        const shares = await api.getTrackerShares(trackerId);
+        
+        if (!shares || shares.length === 0) {
+          listContainer.innerHTML = '<p style="color: var(--muted); text-align: center; padding: 2rem;">No shares yet. Share this tracker with other users above.</p>';
+          return;
+        }
+        
+        const html = shares.map(share => {
+          const permissionBadge = share.permission === 'write' 
+            ? '<span style="background: var(--primary); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; margin-left: 0.5rem;">Write</span>'
+            : '<span style="background: var(--muted); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; margin-left: 0.5rem;">Read</span>';
+          
+          return `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--panel); border-radius: 8px; margin-bottom: 0.5rem; border: 1px solid rgba(255,255,255,.1);">
+              <div>
+                <div style="font-weight: 600; color: var(--text); margin-bottom: 0.25rem;">
+                  ${share.shared_with_user_id || 'Unknown User'}
+                  ${permissionBadge}
+                </div>
+                <div style="font-size: 0.85rem; color: var(--muted);">
+                  Shared ${new Date(share.created_at).toLocaleDateString()}
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <button 
+                  class="btn btn-outline-primary btn-sm" 
+                  onclick="updateSharePermission('${share.id}', '${share.permission === 'read' ? 'write' : 'read'}')"
+                  style="white-space: nowrap;"
+                >
+                  ${share.permission === 'read' ? 'Make Write' : 'Make Read'}
+                </button>
+                <button 
+                  class="btn btn-outline-danger btn-sm" 
+                  onclick="removeShare('${share.id}')"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        listContainer.innerHTML = html;
+      } catch (error) {
+        console.error('Error loading shares:', error);
+        listContainer.innerHTML = '<p style="color: var(--danger); text-align: center; padding: 2rem;">Failed to load shares: ' + (error.message || 'Unknown error') + '</p>';
+      }
+    }
+
+    async function updateSharePermission(shareId, newPermission) {
+      try {
+        const currentTracker = trackerManager?.getCurrentTracker();
+        if (!currentTracker) return;
+        
+        await appApi.updateSharePermission(shareId, newPermission);
+        showAlert('Permission updated successfully!', 'success');
+        await loadSharedUsers(currentTracker.id, appApi);
+      } catch (error) {
+        console.error('Error updating permission:', error);
+        showAlert('Failed to update permission: ' + (error.message || 'Unknown error'), 'danger');
+      }
+    }
+
+    async function removeShare(shareId) {
+      if (!confirm('Are you sure you want to remove this share?')) {
+        return;
+      }
+      
+      try {
+        const currentTracker = trackerManager?.getCurrentTracker();
+        if (!currentTracker) return;
+        
+        await appApi.removeShare(shareId);
+        showAlert('Share removed successfully!', 'success');
+        await loadSharedUsers(currentTracker.id, appApi);
+      } catch (error) {
+        console.error('Error removing share:', error);
+        showAlert('Failed to remove share: ' + (error.message || 'Unknown error'), 'danger');
+      }
+    }
+
+    // Make functions available globally for onclick handlers
+    window.updateSharePermission = updateSharePermission;
+    window.removeShare = removeShare;
 
   </script>
 

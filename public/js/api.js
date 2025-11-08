@@ -72,6 +72,40 @@ class SavingsAPI {
     }
   }
 
+  // Tracker Shares management
+  async getTrackerShares(trackerId) {
+    return await this.request(`/tracker-shares?trackerId=${trackerId}`, {
+      method: 'GET'
+    });
+  }
+
+  async shareTracker(trackerId, sharedWithUserId, permission = 'read') {
+    return await this.request('/tracker-shares', {
+      method: 'POST',
+      body: {
+        trackerId,
+        sharedWithUserId,
+        permission
+      }
+    });
+  }
+
+  async updateSharePermission(shareId, permission) {
+    return await this.request('/tracker-shares', {
+      method: 'PUT',
+      body: {
+        shareId,
+        permission
+      }
+    });
+  }
+
+  async removeShare(shareId) {
+    return await this.request(`/tracker-shares?shareId=${shareId}`, {
+      method: 'DELETE'
+    });
+  }
+
   // Trackers management
   async getTrackers() {
     // Trackers endpoint doesn't need trackerId
