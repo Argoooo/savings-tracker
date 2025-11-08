@@ -1085,17 +1085,43 @@
           updateLoadingStatus('Completing sign-in...');
           
           // Supabase will automatically handle the hash, but we can help it along
-          authInstance.supabase.auth.getSession().then(() => {
-            // Clear hash from URL
-            if (window.history && window.history.replaceState) {
-              window.history.replaceState(null, '', window.location.pathname);
+          authInstance.supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+            if (error) {
+              console.error('❌ OAuth callback error:', error);
+              window.location.href = '/login.html';
+              return;
             }
-            updateLoadingStatus('Sign-in complete!');
-            callback();
+            
+            if (session) {
+              // Ensure session is set on auth instance
+              authInstance.session = session;
+              console.log('✅ Session set on auth instance after OAuth');
+              
+              // Clear hash from URL
+              if (window.history && window.history.replaceState) {
+                window.history.replaceState(null, '', window.location.pathname);
+              }
+              updateLoadingStatus('Sign-in complete!');
+              callback();
+            } else {
+              console.error('❌ No session after OAuth callback');
+              window.location.href = '/login.html';
+            }
           });
         } else {
-          updateLoadingStatus('Auth ready');
-          callback();
+          // For non-OAuth flow, ensure session is checked and set
+          authInstance.checkSession().then((session) => {
+            if (session) {
+              authInstance.session = session;
+              console.log('✅ Session checked and set');
+            }
+            updateLoadingStatus('Auth ready');
+            callback();
+          }).catch((error) => {
+            console.error('❌ Session check failed:', error);
+            updateLoadingStatus('Auth ready');
+            callback(); // Continue anyway, will fail gracefully
+          });
         }
       } else if (authWaitAttempts >= MAX_AUTH_WAIT) {
         console.error('❌ Auth initialization timeout - trying direct Supabase check');
