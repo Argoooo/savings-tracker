@@ -2686,7 +2686,6 @@
     let contributionChart, consistencyChart, timelineChart, txChart, txChart2, txStackedChart, monthlyContributionChart;
     
     function buildContributionChart(){
-      const ctx = $('#contributionChart'); if(contributionChart) contributionChart.destroy();
       
       // Calculate contribution breakdown for each person
       const personStats = appState.people.map(person => {
