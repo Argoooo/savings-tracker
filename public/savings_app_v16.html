@@ -478,6 +478,9 @@
     <button id="btn-share-tracker" class="btn btn-outline-primary btn-sm" style="white-space: nowrap;" title="Share this tracker">
       🔗 Share
     </button>
+    <button id="btn-delete-tracker" class="btn btn-outline-danger btn-sm" style="white-space: nowrap;" title="Delete this tracker">
+      🗑️ Delete
+    </button>
     <button id="btn-new-tracker" class="btn btn-primary btn-sm" style="white-space: nowrap;">
       + New Tracker
     </button>
@@ -566,15 +569,6 @@
   </div>
 </div>
 
-<!-- Sync notification banner -->
-<div class="sync-banner" id="syncBanner">
-  <div>📱 <strong>Sync available!</strong> Import data from another device to combine your changes.</div>
-  <div class="sync-actions">
-    <button class="btn btn-light btn-sm" id="syncBannerImport">📥 Import Now</button>
-    <button class="btn btn-outline-light btn-sm" id="syncBannerDismiss">✕ Dismiss</button>
-  </div>
-</div>
-
 <main class="container my-3" style="display: none;" id="mainContent">
 <!-- Tabs -->
 <ul class="nav nav-pills no-print" id="mainTabs" role="tablist">
@@ -583,7 +577,6 @@
 <li class="nav-item" role="presentation"><button class="nav-link" data-bs-target="#tabGoals" data-bs-toggle="pill" role="tab" type="button">🎯 Goals</button></li>
 <li class="nav-item" role="presentation"><button class="nav-link" data-bs-target="#tabRates" data-bs-toggle="pill" role="tab" type="button">📈 Rates</button></li>
 <li class="nav-item" role="presentation"><button class="nav-link" data-bs-target="#tabTx" data-bs-toggle="pill" role="tab" type="button">💳 Transactions</button></li>
-<li class="nav-item" role="presentation"><button class="nav-link" data-bs-target="#tabExport" data-bs-toggle="pill" role="tab" type="button">📁 Export</button></li>
 <li class="nav-item" role="presentation"><button class="nav-link" data-bs-target="#tabSettings" data-bs-toggle="pill" role="tab" type="button">⚙️ Settings</button></li>
 </ul>
 <div class="tab-content mt-3">
@@ -887,28 +880,6 @@
 <tbody></tbody>
 </table>
 </div>
-</div>
-</div>
-</div>
-</section>
-<!-- Export / Import -->
-<section class="tab-pane fade" id="tabExport" role="tabpanel">
-<div class="card p-3">
-<div class="d-flex flex-wrap gap-2">
-<button class="btn btn-primary" id="exportJsonBtn">⬇️ Export JSON</button>
-<button class="btn btn-ghost" id="exportCsvPeopleBtn">⬇️ People CSV</button>
-<button class="btn btn-ghost" id="exportCsvGoalsBtn">⬇️ Goals CSV</button>
-<button class="btn btn-ghost" id="exportCsvTxBtn">⬇️ Transactions CSV</button>
-<span class="chip">Auto‑save: <b>localStorage</b></span>
-</div>
-<hr/>
-<div class="row g-3">
-<div class="col-md-6">
-<label class="form-label">Import JSON</label>
-<input accept=".json,application/json" class="form-control" id="importFile" type="file"/>
-</div>
-<div class="col-md-2 d-flex align-items-end">
-<button class="btn btn-warning w-100" id="importBtn">⬆️ Import</button>
 </div>
 </div>
 </div>
@@ -4047,6 +4018,65 @@ Choose OK to replace, Cancel to merge.`);
     // Make functions available globally for onclick handlers
     window.updateSharePermission = updateSharePermission;
     window.removeShare = removeShare;
+
+    // Delete Tracker UI Functions
+    function initializeDeleteTrackerUI(trackerManager) {
+      const deleteBtn = document.getElementById('btn-delete-tracker');
+      
+      if (!deleteBtn) {
+        console.warn('Delete tracker button not found');
+        return;
+      }
+
+      deleteBtn.addEventListener('click', async () => {
+        const currentTracker = trackerManager.getCurrentTracker();
+        if (!currentTracker) {
+          showAlert('No tracker selected', 'danger');
+          return;
+        }
+        
+        // Check if user is owner
+        if (!currentTracker.isOwner) {
+          showAlert('Only tracker owners can delete trackers', 'warning');
+          return;
+        }
+        
+        // Confirm deletion
+        const trackerName = currentTracker.name;
+        const confirmed = confirm(
+          `Are you sure you want to delete "${trackerName}"?\n\n` +
+          `This will permanently delete all data in this tracker including:\n` +
+          `- People and their savings\n` +
+          `- Goals\n` +
+          `- Transactions\n` +
+          `- Settings\n\n` +
+          `This action cannot be undone!`
+        );
+        
+        if (!confirmed) {
+          return;
+        }
+        
+        try {
+          deleteBtn.disabled = true;
+          deleteBtn.textContent = 'Deleting...';
+          
+          await trackerManager.deleteTracker(currentTracker.id);
+          
+          showAlert('Tracker deleted successfully!', 'success');
+          
+          // Reload page to refresh tracker list and data
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        } catch (error) {
+          console.error('Error deleting tracker:', error);
+          showAlert('Failed to delete tracker: ' + (error.message || 'Unknown error'), 'danger');
+          deleteBtn.disabled = false;
+          deleteBtn.textContent = '🗑️ Delete';
+        }
+      });
+    }
 
   </script>
 
