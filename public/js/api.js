@@ -76,13 +76,31 @@ class SavingsAPI {
   async getTrackers() {
     // Trackers endpoint doesn't need trackerId
     const url = `${API_BASE}/api/trackers`;
+    
+    // Ensure we have auth headers - wait for session if needed
+    if (!this.auth) {
+      throw new Error('Auth manager not available');
+    }
+    
+    // Wait for session to be available
+    let attempts = 0;
+    while (!this.auth.session && attempts < 10) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await this.auth.checkSession();
+      attempts++;
+    }
+    
     const headers = {
       'Content-Type': 'application/json',
       ...this.auth?.getHeaders()
     };
     
     const response = await fetch(url, { headers });
-    if (!response.ok) throw new Error('Failed to fetch trackers');
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error('Failed to fetch trackers:', response.status, errorText);
+      throw new Error(`Failed to fetch trackers: ${response.status}`);
+    }
     return await response.json();
   }
 
