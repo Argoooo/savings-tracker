@@ -2288,115 +2288,8 @@
         btn.innerHTML = originalText;
       }, 500);
     });
-    
-    $('#exportRatesExcelBtn').addEventListener('click', ()=>{
-      const principal = currentSavingsHousehold();
-      const apy = appState.settings.apyPct || 0;
-      const householdIncome = householdMonthlyIncome();
-      
-      // Create comprehensive Excel-compatible CSV
-      const lines = [];
-      
-      // Header information
-      lines.push('Savings Rate Scenarios Analysis');
-      lines.push(`Generated: ${new Date().toLocaleString()}`);
-      lines.push(`Household Monthly Income: ${fmtMoney(householdIncome)}`);
-      lines.push(`Current Savings: ${fmtMoney(principal)}`);
-      lines.push(`APY: ${apy}%`);
-      lines.push('');
-      
-      // Summary table
-      lines.push('Rate,Monthly Total,Annual Total,2-Year Value,5-Year Value,Goals On Track,Status');
-      
-      appState.scenarioRates.forEach(r => {
-        const rate = Number(r) || 0;
-        
-        // Calculate totals
-        const rows = appState.people.map(p => {
-          const inc = totalMonthlyIncome(p);
-          return { name: p.name, contribution: inc * (rate / 100) };
-        });
-        const monthlyTotal = rows.reduce((s, x) => s + x.contribution, 0);
-        const annual = monthlyTotal * 12;
-        const fv2 = projectFV({ principal, monthlyContribution: monthlyTotal, months: 24, apyPct: apy });
-        const fv5 = projectFV({ principal, monthlyContribution: monthlyTotal, months: 60, apyPct: apy });
-        
-        // Goal analysis
-        const perGoal = appState.goals.map(g => {
-          const cur = ownerSavings(g.owner);
-          const monthsLeft = monthsBetween(new Date(), g.deadline);
-          const eta = monthsToReach({
-            current: cur,
-            monthlyContribution: monthlyTotal,
-            target: g.target,
-            apyPct: apy
-          });
-          const onTime = Number.isFinite(eta) && eta <= monthsLeft;
-          return { name: g.name, onTime, eta };
-        });
-        
-        const onTimeCount = perGoal.filter(g => g.onTime).length;
-        const status = onTimeCount === perGoal.length ? 'All Goals Achievable' : 
-                      onTimeCount > 0 ? 'Some Goals At Risk' : 'Goals Not Achievable';
-        
-        lines.push(`${rate}%,${monthlyTotal.toFixed(2)},${annual.toFixed(2)},${fv2.toFixed(2)},${fv5.toFixed(2)},${onTimeCount}/${perGoal.length},${status}`);
-      });
-      
-      lines.push('');
-      lines.push('Detailed Breakdown by Person');
-      lines.push('');
-      
-      // Person contribution breakdown for each rate
-      appState.scenarioRates.forEach(r => {
-        const rate = Number(r) || 0;
-        lines.push(`Savings Rate: ${rate}%`);
-        lines.push('Person,Monthly Income,Contribution Amount,Contribution %');
-        
-        appState.people.forEach(p => {
-          const income = totalMonthlyIncome(p);
-          const contribution = income * (rate / 100);
-          const contributionPct = income > 0 ? ((contribution / income) * 100).toFixed(1) : 0;
-          lines.push(`${p.name},${income.toFixed(2)},${contribution.toFixed(2)},${contributionPct}%`);
-        });
-        
-        const totalContribution = appState.people.reduce((sum, p) => sum + (totalMonthlyIncome(p) * (rate / 100)), 0);
-        lines.push(`Total Household,,${totalContribution.toFixed(2)},${rate}%`);
-        lines.push('');
-      });
-      
-      // Goal impact analysis
-      lines.push('Goal Impact Analysis');
-      lines.push('');
-      
-      appState.scenarioRates.forEach(r => {
-        const rate = Number(r) || 0;
-        const monthlyTotal = appState.people.reduce((sum, p) => sum + (totalMonthlyIncome(p) * (rate / 100)), 0);
-        
-        lines.push(`Rate: ${rate}% (Monthly: ${fmtMoney(monthlyTotal)})`);
-        lines.push('Goal,Target,Current,Months Left,ETA (months),Status,Gap to Target');
-        
-        appState.goals.forEach(g => {
-          const cur = ownerSavings(g.owner);
-          const monthsLeft = monthsBetween(new Date(), g.deadline);
-          const eta = monthsToReach({
-            current: cur,
-            monthlyContribution: monthlyTotal,
-            target: g.target,
-            apyPct: apy
-          });
-          const onTime = Number.isFinite(eta) && eta <= monthsLeft;
-          const status = onTime ? 'On Track' : (Number.isFinite(eta) ? `Late by ${eta - monthsLeft} months` : 'Not Reachable');
-          const gap = Math.max(0, g.target - cur);
-          
-          lines.push(`${g.name},${g.target.toFixed(2)},${cur.toFixed(2)},${monthsLeft},${Number.isFinite(eta) ? eta.toFixed(1) : 'N/A'},${status},${gap.toFixed(2)}`);
-        });
-        lines.push('');
-      });
-      
-      // Download the file
-      const csvContent = lines.join('\n');
-      download(`savings_rate_scenarios_${ts()}.csv`, csvContent, 'text/csv');
-    });
+
+    /********** TRANSACTIONS **********/
 
     /********** TRANSACTIONS **********/
     $('#addTxBtn').addEventListener('click', async ()=>{
@@ -2686,6 +2579,7 @@
     let contributionChart, consistencyChart, timelineChart, txChart, txChart2, txStackedChart, monthlyContributionChart;
     
     function buildContributionChart(){
+      const ctx = $('#contributionChart'); if(contributionChart) contributionChart.destroy();
       
       // Calculate contribution breakdown for each person
       const personStats = appState.people.map(person => {
