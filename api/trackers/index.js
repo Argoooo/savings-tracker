@@ -11,15 +11,44 @@ async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const { data: trackers, error } = await supabase
+      // Get owned trackers
+      const { data: ownedTrackers, error: ownedError } = await supabase
         .from('trackers')
         .select('*')
-        .or(`user_id.eq.${userId},id.in.(SELECT tracker_id FROM tracker_shares WHERE shared_with_user_id.eq.${userId})`)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (ownedError) throw ownedError;
 
-      const trackersList = (trackers || []).map(t => ({
+      // Get shared trackers
+      const { data: shares, error: sharesError } = await supabase
+        .from('tracker_shares')
+        .select('tracker_id')
+        .eq('shared_with_user_id', userId);
+
+      if (sharesError) throw sharesError;
+
+      const sharedTrackerIds = (shares || []).map(s => s.tracker_id);
+      let sharedTrackers = [];
+      
+      if (sharedTrackerIds.length > 0) {
+        const { data, error: sharedError } = await supabase
+          .from('trackers')
+          .select('*')
+          .in('id', sharedTrackerIds)
+          .order('created_at', { ascending: false });
+        
+        if (sharedError) throw sharedError;
+        sharedTrackers = data || [];
+      }
+
+      // Combine and deduplicate
+      const allTrackers = [...(ownedTrackers || []), ...sharedTrackers];
+      const uniqueTrackers = Array.from(
+        new Map(allTrackers.map(t => [t.id, t])).values()
+      );
+
+      const trackersList = uniqueTrackers.map(t => ({
         id: t.id,
         name: t.name,
         description: t.description || '',
