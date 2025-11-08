@@ -24,6 +24,7 @@ ALTER TABLE tracker_shares ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for tracker_shares
 -- Note: We avoid checking trackers table to prevent recursion
+DROP POLICY IF EXISTS "Users can view shares of their trackers" ON tracker_shares;
 CREATE POLICY "Users can view shares of their trackers"
   ON tracker_shares FOR SELECT
   USING (
@@ -34,6 +35,7 @@ CREATE POLICY "Users can view shares of their trackers"
     shared_with_user_id = auth.uid()
   );
 
+DROP POLICY IF EXISTS "Users can create shares for their trackers" ON tracker_shares;
 CREATE POLICY "Users can create shares for their trackers"
   ON tracker_shares FOR INSERT
   WITH CHECK (
@@ -42,6 +44,7 @@ CREATE POLICY "Users can create shares for their trackers"
     shared_by_user_id = auth.uid()
   );
 
+DROP POLICY IF EXISTS "Users can update shares of their trackers" ON tracker_shares;
 CREATE POLICY "Users can update shares of their trackers"
   ON tracker_shares FOR UPDATE
   USING (
@@ -49,6 +52,7 @@ CREATE POLICY "Users can update shares of their trackers"
     shared_by_user_id = auth.uid()
   );
 
+DROP POLICY IF EXISTS "Users can delete shares of their trackers" ON tracker_shares;
 CREATE POLICY "Users can delete shares of their trackers"
   ON tracker_shares FOR DELETE
   USING (
