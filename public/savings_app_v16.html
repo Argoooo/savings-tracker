@@ -1389,10 +1389,13 @@
             if (session) {
               console.log('✅ Session found via direct check');
               updateLoadingStatus('Session found');
+              // Update user email display
+              updateUserEmailDisplay();
               // Create auth object manually if needed
               if (!window.auth || typeof window.auth === 'undefined') {
                 window.auth = {
                   supabase: supabase,
+                  session: session,
                   checkSession: async () => {
                     const { data } = await supabase.auth.getSession();
                     return data.session;
