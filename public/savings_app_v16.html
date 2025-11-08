@@ -2722,51 +2722,7 @@
       }
     }
 
-    /********** EXPORT / IMPORT **********/
-    function download(filename, content, mime='text/plain'){
-      const blob=new Blob([content],{type:mime}); const a=document.createElement('a');
-      a.href=URL.createObjectURL(blob); a.download=filename; a.click(); URL.revokeObjectURL(a.href);
-    }
-    function ts(){ const d=new Date(); return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}${String(d.getSeconds()).padStart(2,'0')}`; }
-
-    $('#exportJsonBtn').addEventListener('click', ()=> download(`savings_${ts()}.json`, JSON.stringify(appState,null,2), 'application/json'));
-    $('#exportCsvPeopleBtn').addEventListener('click', ()=>{
-      const lines = ['Person,Income Label,Amount,Frequency,Current Savings,Total Monthly Income'];
-      appState.people.forEach(p=>{
-        const totalM = totalMonthlyIncome(p);
-        if(!(p.incomes||[]).length){ lines.push(`"${p.name}",,0,monthly,${p.currentSavings},${totalM}`); }
-        else p.incomes.forEach(i => lines.push(`"${p.name}","${String(i.label).replaceAll('"','""')}",${i.amount},${i.frequency},${p.currentSavings},${totalM}`));
-      });
-      download(`people_${ts()}.csv`, lines.join('\n'), 'text/csv');
-    });
-    $('#exportCsvGoalsBtn').addEventListener('click', ()=>{
-      const lines = ['Goal,Target,Deadline,Owner,Priority,Months Left,Required Monthly'];
-      appState.goals.forEach(g=>{
-        const ml = monthsBetween(new Date(), g.deadline);
-        const cur = ownerSavings(g.owner);
-        const need = Math.max(0, g.target - cur);
-        const req = ml? (need/ml) : '';
-        lines.push([`"${String(g.name).replaceAll('"','""')}"`, g.target, g.deadline, `"${g.owner}"`, g.priority, ml, (isFinite(req)? req.toFixed(2):'')].join(','));
-      });
-      download(`goals_${ts()}.csv`, lines.join('\n'), 'text/csv');
-    });
-    $('#exportCsvTxBtn').addEventListener('click', ()=>{
-      const lines = ['Date,Person,Amount,Note'];
-      appState.transactions.forEach(t=> lines.push([t.date, `"${t.person}"`, t.amount, `"${(t.note||'').replaceAll('"','""')}"`].join(',')));
-      download(`transactions_${ts()}.csv`, lines.join('\n'), 'text/csv');
-    });
-    $('#importBtn').addEventListener('click', ()=>{
-      const f = $('#importFile').files[0]; if(!f) return alert('Choose a JSON file.');
-      const reader = new FileReader();
-      reader.onload = ()=>{
-        try{
-          const obj = JSON.parse(reader.result);
-          if(!obj.settings || !Array.isArray(obj.people) || !Array.isArray(obj.goals) || !Array.isArray(obj.transactions)) throw new Error('Invalid schema');
-          appState = obj; saveState(); alert('Import successful.');
-        } catch(e){ alert('Import failed: '+e.message); }
-      };
-      reader.readAsText(f);
-    });
+    /********** CHARTS **********/
 
     /********** CHARTS **********/
     let contributionChart, consistencyChart, timelineChart, txChart, txChart2, txStackedChart, monthlyContributionChart;
