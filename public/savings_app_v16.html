@@ -1776,7 +1776,8 @@
         if (!appApi.getTrackerShares) {
           console.warn('⚠️ getTrackerShares missing, adding manually...');
           appApi.getTrackerShares = async function(trackerId) {
-            return await this.request(`/tracker-shares?trackerId=${trackerId}`, { method: 'GET' });
+            // Don't add trackerId to URL - request() method already adds it
+            return await this.request('/tracker-shares', { method: 'GET' });
           };
         }
         if (!appApi.shareTracker) {
@@ -1800,6 +1801,7 @@
         if (!appApi.removeShare) {
           console.warn('⚠️ removeShare missing, adding manually...');
           appApi.removeShare = async function(shareId) {
+            // Don't add trackerId to URL - request() method already adds it
             return await this.request(`/tracker-shares?shareId=${shareId}`, { method: 'DELETE' });
           };
         }
@@ -4034,7 +4036,14 @@
         }
         
         // Try to call the method directly - it should exist on the prototype
-        const shares = await api.getTrackerShares(trackerId);
+        const shares = await api.getTrackerShares(trackerId).catch(error => {
+          // Handle 404 or "Tracker not found" gracefully
+          if (error.message && (error.message.includes('not found') || error.message.includes('404'))) {
+            console.log('ℹ️ No shares found or endpoint not available yet');
+            return [];
+          }
+          throw error;
+        });
         
         if (!shares || shares.length === 0) {
           listContainer.innerHTML = '<p style="color: var(--muted); text-align: center; padding: 2rem;">No shares yet. Share this tracker with other users above.</p>';
