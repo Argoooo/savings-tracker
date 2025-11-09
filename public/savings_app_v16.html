@@ -1813,15 +1813,30 @@
         console.log('✅ Render complete!');
         
         // Initialize share tracker UI now that API is confirmed ready (after getAllData call)
-        if (appApi && typeof appApi.getTrackerShares === 'function') {
-          console.log('🔗 Initializing share tracker UI...');
-          initializeShareTrackerUI(trackerManager, appApi);
-        } else {
-          console.error('❌ Cannot initialize share tracker UI - API methods not available');
-          console.log('appApi:', appApi);
-          if (appApi) {
-            console.log('Available methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(appApi)));
+        if (appApi) {
+          // Check if methods exist (they might be on prototype)
+          const hasGetTrackerShares = typeof appApi.getTrackerShares === 'function' || 
+                                      typeof Object.getPrototypeOf(appApi).getTrackerShares === 'function';
+          const hasShareTracker = typeof appApi.shareTracker === 'function' || 
+                                  typeof Object.getPrototypeOf(appApi).shareTracker === 'function';
+          
+          if (hasGetTrackerShares && hasShareTracker) {
+            console.log('🔗 Initializing share tracker UI...');
+            initializeShareTrackerUI(trackerManager, appApi);
+          } else {
+            console.error('❌ Cannot initialize share tracker UI - API methods not available');
+            console.log('appApi:', appApi);
+            console.log('getTrackerShares type:', typeof appApi.getTrackerShares);
+            console.log('shareTracker type:', typeof appApi.shareTracker);
+            if (appApi) {
+              const proto = Object.getPrototypeOf(appApi);
+              console.log('Prototype methods:', Object.getOwnPropertyNames(proto));
+              console.log('Has getTrackerShares on proto:', 'getTrackerShares' in proto);
+              console.log('Has shareTracker on proto:', 'shareTracker' in proto);
+            }
           }
+        } else {
+          console.error('❌ Cannot initialize share tracker UI - appApi is null');
         }
         
         // Small delay before hiding loading screen for smooth transition
@@ -3910,8 +3925,16 @@
           }
           
           try {
-            // Validate API instance
-            if (!api || typeof api.shareTracker !== 'function') {
+            // Validate API instance - check both instance and prototype
+            if (!api) {
+              console.error('API instance is null or undefined');
+              showAlert('API error: Unable to share tracker. Please refresh the page.', 'danger');
+              return;
+            }
+            
+            // Check if method exists on instance or prototype
+            const shareTrackerMethod = api.shareTracker || Object.getPrototypeOf(api).shareTracker;
+            if (typeof shareTrackerMethod !== 'function') {
               console.error('API instance invalid or missing shareTracker method. API:', api);
               if (api) {
                 console.error('Available methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(api)));
@@ -3923,7 +3946,7 @@
             addShareBtn.disabled = true;
             addShareBtn.textContent = 'Sharing...';
             
-            await api.shareTracker(currentTracker.id, null, email, permission);
+            await shareTrackerMethod.call(api, currentTracker.id, null, email, permission);
             showAlert('Tracker shared successfully!', 'success');
             emailInput.value = '';
             await loadSharedUsers(currentTracker.id, api);
@@ -3946,21 +3969,23 @@
       try {
         listContainer.innerHTML = '<p style="color: var(--muted); text-align: center; padding: 2rem;">Loading shares...</p>';
         
-        // Validate API instance
+        // Validate API instance - check both instance and prototype
         if (!api) {
           console.error('API instance is null or undefined');
           listContainer.innerHTML = '<p style="color: var(--danger); text-align: center; padding: 2rem;">Error: API not initialized</p>';
           return;
         }
         
-        if (typeof api.getTrackerShares !== 'function') {
+        // Check if method exists on instance or prototype
+        const getTrackerSharesMethod = api.getTrackerShares || Object.getPrototypeOf(api).getTrackerShares;
+        if (typeof getTrackerSharesMethod !== 'function') {
           console.error('API instance missing getTrackerShares method. API:', api);
           console.error('Available methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(api)));
           listContainer.innerHTML = '<p style="color: var(--danger); text-align: center; padding: 2rem;">Error: API method not available</p>';
           return;
         }
         
-        const shares = await api.getTrackerShares(trackerId);
+        const shares = await getTrackerSharesMethod.call(api, trackerId);
         
         if (!shares || shares.length === 0) {
           listContainer.innerHTML = '<p style="color: var(--muted); text-align: center; padding: 2rem;">No shares yet. Share this tracker with other users above.</p>';
