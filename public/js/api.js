@@ -57,13 +57,17 @@ class SavingsAPI {
       // Read response text once (can only be read once)
       const responseText = await response.text();
       console.log('🔵 Response status:', response.status);
-      console.log('🔵 Response text:', responseText);
+      console.log('🔵 Response text (raw):', responseText);
+      console.log('🔵 Response headers:', Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
         let errorData;
         try {
           errorData = responseText ? JSON.parse(responseText) : { error: 'Unknown error' };
+          console.log('🔵 Parsed error data:', errorData);
         } catch (parseError) {
+          console.error('🔵 Failed to parse error response:', parseError);
+          console.error('🔵 Raw response text:', responseText);
           errorData = { error: `HTTP ${response.status}`, details: 'Failed to parse error response', raw: responseText };
         }
         
