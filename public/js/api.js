@@ -56,7 +56,14 @@ class SavingsAPI {
       
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(error.error || `HTTP ${response.status}`);
+        const errorMessage = error.error || error.details || `HTTP ${response.status}`;
+        console.error(`API Error [${endpoint}]:`, {
+          status: response.status,
+          error: errorMessage,
+          details: error.details || error,
+          body: options.body
+        });
+        throw new Error(errorMessage);
       }
 
       // Handle empty responses
