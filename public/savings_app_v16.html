@@ -2443,7 +2443,9 @@
           console.log('Adding income, updating person:', personData);
           console.log('Income details:', personData.incomes);
           await appApi.updatePerson(personData);
-          saveState();
+          // Don't call saveState() here - updatePerson already saves to backend
+          // saveState() only saves settings, not people
+          console.log('✅ Income added successfully');
           renderPeople(); // Re-render to show new income
         } catch (error) {
           console.error('Error adding income:', error);
