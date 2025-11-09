@@ -1813,21 +1813,19 @@
         console.log('✅ Render complete!');
         
         // Initialize share tracker UI now that API is confirmed ready (after getAllData call)
+        // Just try to initialize - if methods don't exist, the error will be caught in initializeShareTrackerUI
         if (appApi) {
-          // Try to initialize - methods should exist on prototype
+          console.log('🔗 Attempting to initialize share tracker UI...');
+          console.log('appApi type:', typeof appApi);
+          console.log('appApi constructor:', appApi.constructor?.name);
+          console.log('appApi prototype:', Object.getPrototypeOf(appApi));
+          console.log('Has getTrackerShares:', 'getTrackerShares' in appApi);
+          console.log('Has shareTracker:', 'shareTracker' in appApi);
+          
+          // Just initialize it - let the actual function calls handle errors
           try {
-            // Test if methods are callable
-            if ('getTrackerShares' in appApi || 'getTrackerShares' in Object.getPrototypeOf(appApi)) {
-              console.log('🔗 Initializing share tracker UI...');
-              initializeShareTrackerUI(trackerManager, appApi);
-            } else {
-              console.error('❌ getTrackerShares method not found on API instance');
-              console.log('appApi:', appApi);
-              const proto = Object.getPrototypeOf(appApi);
-              console.log('Prototype:', proto);
-              console.log('All prototype properties:', Object.getOwnPropertyNames(proto));
-              console.log('Has getTrackerShares:', 'getTrackerShares' in proto);
-            }
+            initializeShareTrackerUI(trackerManager, appApi);
+            console.log('✅ Share tracker UI initialization attempted');
           } catch (error) {
             console.error('❌ Error initializing share tracker UI:', error);
           }
@@ -3857,6 +3855,33 @@
       
       if (!shareBtn || !shareModal) {
         console.warn('Share tracker UI elements not found');
+        return;
+      }
+
+      // Verify API has the required methods before proceeding
+      if (!api) {
+        console.error('API instance is null');
+        return;
+      }
+      
+      // Check if methods exist by trying to access them
+      const hasGetTrackerShares = typeof api.getTrackerShares === 'function';
+      const hasShareTracker = typeof api.shareTracker === 'function';
+      
+      if (!hasGetTrackerShares || !hasShareTracker) {
+        console.warn('⚠️ Share tracker methods not available on API instance');
+        console.log('API instance:', api);
+        console.log('API constructor:', api.constructor?.name);
+        console.log('getTrackerShares type:', typeof api.getTrackerShares);
+        console.log('shareTracker type:', typeof api.shareTracker);
+        
+        // Try to get from prototype
+        const proto = Object.getPrototypeOf(api);
+        console.log('Prototype:', proto);
+        console.log('Prototype constructor:', proto.constructor?.name);
+        console.log('Prototype methods:', Object.getOwnPropertyNames(proto));
+        
+        // Don't initialize if methods don't exist
         return;
       }
 
