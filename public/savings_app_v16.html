@@ -2436,6 +2436,9 @@
             frequency: inc.frequency || 'monthly'
           }))
         };
+        console.log('🔵 Adding income - Person ID:', p.id);
+        console.log('🔵 Adding income - All people IDs:', appState.people.map(p => p.id));
+        console.log('🔵 Adding income - Person data being sent:', JSON.stringify(personData, null, 2));
         try {
           console.log('Adding income, updating person:', personData);
           console.log('Income details:', personData.incomes);
