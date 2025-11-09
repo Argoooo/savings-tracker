@@ -32,17 +32,30 @@ async function handler(req, res) {
     if (transactionsResult.error) throw transactionsResult.error;
     if (scenarioRatesResult.error && scenarioRatesResult.error.code !== 'PGRST116') throw scenarioRatesResult.error;
 
-    // Fetch incomes for all people
+    // Fetch incomes for all people using service role to bypass RLS
     const people = peopleResult.data || [];
+    
+    // Use service role client for fetching incomes to bypass RLS
+    const { createClient } = await import('@supabase/supabase-js');
+    const serviceRoleClient = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+    
     const peopleWithIncomes = await Promise.all(
       people.map(async (person) => {
-        const { data: incomes, error: incomesError } = await supabase
+        const { data: incomes, error: incomesError } = await serviceRoleClient
           .from('incomes')
           .select('*')
           .eq('person_id', person.id)
           .order('created_at', { ascending: true });
 
-        if (incomesError) throw incomesError;
+        if (incomesError) {
+          console.error(`Error fetching incomes for person ${person.id}:`, incomesError);
+          throw incomesError;
+        }
+
+        console.log(`Fetched ${incomes?.length || 0} incomes for person ${person.id} (${person.name})`);
 
         return {
           ...person,
