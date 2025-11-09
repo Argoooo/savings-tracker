@@ -55,14 +55,26 @@ class SavingsAPI {
       }
       
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-        const errorMessage = error.error || error.details || `HTTP ${response.status}`;
+        let errorData;
+        try {
+          const text = await response.text();
+          errorData = text ? JSON.parse(text) : { error: 'Unknown error' };
+        } catch (parseError) {
+          errorData = { error: `HTTP ${response.status}`, details: 'Failed to parse error response' };
+        }
+        
+        const errorMessage = errorData.error || errorData.details || `HTTP ${response.status}`;
+        const errorDetails = errorData.details || errorData;
+        
         console.error(`API Error [${endpoint}]:`, {
           status: response.status,
+          statusText: response.statusText,
           error: errorMessage,
-          details: error.details || error,
-          body: options.body
+          details: errorDetails,
+          fullError: errorData,
+          requestBody: options.body
         });
+        
         throw new Error(errorMessage);
       }
 

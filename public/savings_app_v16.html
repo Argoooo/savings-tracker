@@ -2438,11 +2438,17 @@
             }))
           };
           console.log('Adding income, updating person:', personData);
+          console.log('Income details:', personData.incomes);
           await appApi.updatePerson(personData);
           saveState();
           renderPeople(); // Re-render to show new income
         } catch (error) {
           console.error('Error adding income:', error);
+          console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            personData: personData
+          });
           showAlert('Failed to add income: ' + (error.message || 'Unknown error'), 'danger');
           // Remove the income from local state if save failed
           p.incomes = p.incomes.slice(0, -1);
