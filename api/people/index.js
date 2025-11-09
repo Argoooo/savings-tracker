@@ -87,16 +87,33 @@ async function handler(req, res) {
 
         // Use service role client to bypass RLS since we've already verified access via tracker_id
         const { createClient } = await import('@supabase/supabase-js');
+        
+        if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+          console.error('Missing Supabase environment variables:', {
+            hasUrl: !!process.env.SUPABASE_URL,
+            hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+          });
+          throw new Error('Server configuration error: Missing Supabase credentials');
+        }
+        
         const serviceRoleClient = createClient(
           process.env.SUPABASE_URL,
           process.env.SUPABASE_SERVICE_ROLE_KEY
         );
 
-        const { error: incomesError } = await serviceRoleClient
+        console.log('Creating person - Inserting incomes with service role client:', incomesData);
+        const { data: insertedIncomes, error: incomesError } = await serviceRoleClient
           .from('incomes')
-          .insert(incomesData);
+          .insert(incomesData)
+          .select();
 
-        if (incomesError) throw incomesError;
+        if (incomesError) {
+          console.error('Error inserting incomes:', incomesError);
+          console.error('Incomes data:', incomesData);
+          throw incomesError;
+        }
+        
+        console.log('Successfully inserted incomes:', insertedIncomes);
       }
 
       res.status(201).json({ success: true, id });
@@ -151,6 +168,15 @@ async function handler(req, res) {
 
       // Use service role client to bypass RLS since we've already verified access via tracker_id
       const { createClient } = await import('@supabase/supabase-js');
+      
+      if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        console.error('Missing Supabase environment variables:', {
+          hasUrl: !!process.env.SUPABASE_URL,
+          hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+        });
+        throw new Error('Server configuration error: Missing Supabase credentials');
+      }
+      
       const serviceRoleClient = createClient(
         process.env.SUPABASE_URL,
         process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -176,22 +202,19 @@ async function handler(req, res) {
           frequency: income.frequency || 'monthly'
         }));
 
-        // Use service role client to bypass RLS since we've already verified access via tracker_id
-        const { createClient } = await import('@supabase/supabase-js');
-        const serviceRoleClient = createClient(
-          process.env.SUPABASE_URL,
-          process.env.SUPABASE_SERVICE_ROLE_KEY
-        );
-
-        const { error: incomesError } = await serviceRoleClient
+        console.log('Inserting incomes with service role client:', incomesData);
+        const { data: insertedIncomes, error: incomesError } = await serviceRoleClient
           .from('incomes')
-          .insert(incomesData);
+          .insert(incomesData)
+          .select();
 
         if (incomesError) {
           console.error('Error inserting incomes:', incomesError);
           console.error('Incomes data:', incomesData);
           throw incomesError;
         }
+        
+        console.log('Successfully inserted incomes:', insertedIncomes);
       }
 
       res.status(200).json({ success: true });
