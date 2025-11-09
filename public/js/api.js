@@ -68,7 +68,9 @@ class SavingsAPI {
         const errorMessage = errorData.error || errorData.details || `HTTP ${response.status}`;
         const errorDetails = errorData.details || errorData;
         
-        console.error(`API Error [${endpoint}]:`, {
+        // Log detailed error information
+        console.error(`❌ API Error [${endpoint}]:`, errorMessage);
+        console.error('📋 Error Details:', {
           status: response.status,
           statusText: response.statusText,
           error: errorMessage,
@@ -77,6 +79,9 @@ class SavingsAPI {
           requestBody: options.body,
           responseText: responseText
         });
+        console.error('📦 Full Error Object:', errorData);
+        console.error('📤 Request Body:', options.body);
+        console.error('📥 Response Text:', responseText);
         
         throw new Error(errorMessage);
       }

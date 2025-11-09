@@ -2424,19 +2424,19 @@
         const p = findPersonById(btn.dataset.pid); if(!p) return;
         if (!p.incomes) p.incomes = [];
         p.incomes.push({ id:uid(), label:'Income', amount:0, frequency:'monthly' });
+        const personData = {
+          id: p.id,
+          name: p.name || 'Person',
+          currentSavings: Number(p.currentSavings) || 0,
+          fixedMonthlyContribution: Number(p.fixedMonthlyContribution) || 0,
+          incomes: p.incomes.map(inc => ({
+            id: inc.id || uid(),
+            label: inc.label || 'Income',
+            amount: Number(inc.amount) || 0,
+            frequency: inc.frequency || 'monthly'
+          }))
+        };
         try {
-          const personData = {
-            id: p.id,
-            name: p.name || 'Person',
-            currentSavings: Number(p.currentSavings) || 0,
-            fixedMonthlyContribution: Number(p.fixedMonthlyContribution) || 0,
-            incomes: p.incomes.map(inc => ({
-              id: inc.id || uid(),
-              label: inc.label || 'Income',
-              amount: Number(inc.amount) || 0,
-              frequency: inc.frequency || 'monthly'
-            }))
-          };
           console.log('Adding income, updating person:', personData);
           console.log('Income details:', personData.incomes);
           await appApi.updatePerson(personData);
