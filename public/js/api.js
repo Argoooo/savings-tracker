@@ -54,13 +54,15 @@ class SavingsAPI {
         throw new Error('Unauthorized - please log in');
       }
       
+      // Read response text once (can only be read once)
+      const responseText = await response.text();
+      
       if (!response.ok) {
         let errorData;
         try {
-          const text = await response.text();
-          errorData = text ? JSON.parse(text) : { error: 'Unknown error' };
+          errorData = responseText ? JSON.parse(responseText) : { error: 'Unknown error' };
         } catch (parseError) {
-          errorData = { error: `HTTP ${response.status}`, details: 'Failed to parse error response' };
+          errorData = { error: `HTTP ${response.status}`, details: 'Failed to parse error response', raw: responseText };
         }
         
         const errorMessage = errorData.error || errorData.details || `HTTP ${response.status}`;
@@ -72,19 +74,19 @@ class SavingsAPI {
           error: errorMessage,
           details: errorDetails,
           fullError: errorData,
-          requestBody: options.body
+          requestBody: options.body,
+          responseText: responseText
         });
         
         throw new Error(errorMessage);
       }
 
       // Handle empty responses
-      const text = await response.text();
-      if (!text) {
+      if (!responseText) {
         return null;
       }
 
-      return JSON.parse(text);
+      return JSON.parse(responseText);
     } catch (error) {
       console.error(`API Error [${endpoint}]:`, error);
       throw error;
