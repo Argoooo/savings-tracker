@@ -56,6 +56,8 @@ class SavingsAPI {
       
       // Read response text once (can only be read once)
       const responseText = await response.text();
+      console.log('🔵 Response status:', response.status);
+      console.log('🔵 Response text:', responseText);
       
       if (!response.ok) {
         let errorData;
@@ -80,7 +82,7 @@ class SavingsAPI {
           responseText: responseText
         });
         console.error('📦 Full Error Object:', errorData);
-        console.error('📤 Request Body:', options.body);
+        console.error('📤 Request Body:', JSON.stringify(options.body, null, 2));
         console.error('📥 Response Text:', responseText);
         
         throw new Error(errorMessage);
@@ -276,6 +278,8 @@ class SavingsAPI {
   }
 
   async updatePerson(person) {
+    console.log('🔵 updatePerson called with:', JSON.stringify(person, null, 2));
+    console.log('🔵 Person incomes:', person.incomes);
     return await this.request('/people', {
       method: 'PUT',
       body: person
