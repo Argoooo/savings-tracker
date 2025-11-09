@@ -1771,6 +1771,39 @@
         updateLoadingStatus('Setting up API...');
         appApi = new SavingsAPIClass(authInstance, appCurrentTrackerId);
         trackerManager.api = appApi;
+        
+        // Workaround: Manually add share tracker methods if they're missing (cache issue)
+        if (!appApi.getTrackerShares) {
+          console.warn('⚠️ getTrackerShares missing, adding manually...');
+          appApi.getTrackerShares = async function(trackerId) {
+            return await this.request(`/tracker-shares?trackerId=${trackerId}`, { method: 'GET' });
+          };
+        }
+        if (!appApi.shareTracker) {
+          console.warn('⚠️ shareTracker missing, adding manually...');
+          appApi.shareTracker = async function(trackerId, sharedWithUserId, sharedWithEmail, permission = 'read') {
+            return await this.request('/tracker-shares', {
+              method: 'POST',
+              body: { trackerId, sharedWithUserId, sharedWithEmail, permission }
+            });
+          };
+        }
+        if (!appApi.updateSharePermission) {
+          console.warn('⚠️ updateSharePermission missing, adding manually...');
+          appApi.updateSharePermission = async function(shareId, permission) {
+            return await this.request('/tracker-shares', {
+              method: 'PUT',
+              body: { shareId, permission }
+            });
+          };
+        }
+        if (!appApi.removeShare) {
+          console.warn('⚠️ removeShare missing, adding manually...');
+          appApi.removeShare = async function(shareId) {
+            return await this.request(`/tracker-shares?shareId=${shareId}`, { method: 'DELETE' });
+          };
+        }
+        
         console.log('✅ API initialized');
         
         // Initialize tracker UI
