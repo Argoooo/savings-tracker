@@ -3865,13 +3865,16 @@
       }
       
       // Check if methods exist by trying to access them
+      // Note: async methods might not show up with typeof check, so we'll just try to use them
+      // and catch errors if they don't exist
       const hasGetTrackerShares = typeof api.getTrackerShares === 'function';
       const hasShareTracker = typeof api.shareTracker === 'function';
       
       if (!hasGetTrackerShares || !hasShareTracker) {
-        console.warn('⚠️ Share tracker methods not available on API instance');
+        console.warn('⚠️ Share tracker methods not directly accessible, but will try anyway');
         console.log('API instance:', api);
         console.log('API constructor:', api.constructor?.name);
+        console.log('API instanceof SavingsAPI check:', api instanceof window.SavingsAPI);
         console.log('getTrackerShares type:', typeof api.getTrackerShares);
         console.log('shareTracker type:', typeof api.shareTracker);
         
@@ -3879,10 +3882,20 @@
         const proto = Object.getPrototypeOf(api);
         console.log('Prototype:', proto);
         console.log('Prototype constructor:', proto.constructor?.name);
-        console.log('Prototype methods:', Object.getOwnPropertyNames(proto));
+        const protoMethods = Object.getOwnPropertyNames(proto);
+        console.log('Prototype methods:', protoMethods);
+        console.log('Has getTrackerShares in proto:', 'getTrackerShares' in proto);
+        console.log('Has shareTracker in proto:', 'shareTracker' in proto);
         
-        // Don't initialize if methods don't exist
-        return;
+        // Check if it's actually a SavingsAPI instance
+        if (api.constructor?.name !== 'SavingsAPI' && !(api instanceof window.SavingsAPI)) {
+          console.error('❌ API instance is not a SavingsAPI instance!');
+          console.log('Expected SavingsAPI, got:', api.constructor?.name);
+          return;
+        }
+        
+        // Even if typeof check fails, the methods should exist on the prototype
+        // So we'll proceed and let the actual calls handle errors
       }
 
       // Open share modal
