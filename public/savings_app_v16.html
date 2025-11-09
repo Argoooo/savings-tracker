@@ -2396,34 +2396,87 @@
           }
           // Save to backend
           try {
-            await appApi.updatePerson(p);
+            // Ensure incomes array exists and is properly formatted
+            if (!p.incomes) p.incomes = [];
+            const personData = {
+              id: p.id,
+              name: p.name || 'Person',
+              currentSavings: Number(p.currentSavings) || 0,
+              fixedMonthlyContribution: Number(p.fixedMonthlyContribution) || 0,
+              incomes: p.incomes.map(inc => ({
+                id: inc.id || uid(),
+                label: inc.label || 'Income',
+                amount: Number(inc.amount) || 0,
+                frequency: inc.frequency || 'monthly'
+              }))
+            };
+            console.log('Updating person:', personData);
+            await appApi.updatePerson(personData);
             saveState();
           } catch (error) {
             console.error('Error updating person:', error);
-            saveState(); // Still update UI
+            showAlert('Failed to save changes: ' + (error.message || 'Unknown error'), 'danger');
+            // Don't update UI state if save failed
           }
         });
       });
       $all('#peopleList [data-act="addIncome"]').forEach(btn=> btn.addEventListener('click', async ()=>{
         const p = findPersonById(btn.dataset.pid); if(!p) return;
+        if (!p.incomes) p.incomes = [];
         p.incomes.push({ id:uid(), label:'Income', amount:0, frequency:'monthly' });
         try {
-          await appApi.updatePerson(p);
+          const personData = {
+            id: p.id,
+            name: p.name || 'Person',
+            currentSavings: Number(p.currentSavings) || 0,
+            fixedMonthlyContribution: Number(p.fixedMonthlyContribution) || 0,
+            incomes: p.incomes.map(inc => ({
+              id: inc.id || uid(),
+              label: inc.label || 'Income',
+              amount: Number(inc.amount) || 0,
+              frequency: inc.frequency || 'monthly'
+            }))
+          };
+          console.log('Adding income, updating person:', personData);
+          await appApi.updatePerson(personData);
           saveState();
+          renderPeople(); // Re-render to show new income
         } catch (error) {
           console.error('Error adding income:', error);
-          saveState();
+          showAlert('Failed to add income: ' + (error.message || 'Unknown error'), 'danger');
+          // Remove the income from local state if save failed
+          p.incomes = p.incomes.slice(0, -1);
+          renderPeople();
         }
       }));
       $all('#peopleList [data-act="delIncome"]').forEach(btn=> btn.addEventListener('click', async ()=>{
         const p = findPersonById(btn.dataset.pid); if(!p) return;
-        p.incomes = (p.incomes||[]).filter(i=> i.id!==btn.dataset.iid);
+        const incomeId = btn.dataset.iid;
+        const originalIncomes = [...(p.incomes || [])];
+        p.incomes = (p.incomes||[]).filter(i=> i.id!==incomeId);
         try {
-          await appApi.updatePerson(p);
+          const personData = {
+            id: p.id,
+            name: p.name || 'Person',
+            currentSavings: Number(p.currentSavings) || 0,
+            fixedMonthlyContribution: Number(p.fixedMonthlyContribution) || 0,
+            incomes: (p.incomes || []).map(inc => ({
+              id: inc.id || uid(),
+              label: inc.label || 'Income',
+              amount: Number(inc.amount) || 0,
+              frequency: inc.frequency || 'monthly'
+            }))
+          };
+          console.log('Deleting income, updating person:', personData);
+          await appApi.updatePerson(personData);
           saveState();
+          renderPeople(); // Re-render to reflect deletion
         } catch (error) {
           console.error('Error deleting income:', error);
-          saveState();
+          showAlert('Failed to delete income: ' + (error.message || 'Unknown error'), 'danger');
+          // Restore original incomes if save failed
+          p.incomes = originalIncomes;
+          renderPeople();
         }
       }));
       $all('#peopleList [data-act="delPerson"]').forEach(btn=> btn.addEventListener('click', async ()=>{
