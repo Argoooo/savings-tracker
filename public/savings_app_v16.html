@@ -1896,18 +1896,22 @@
             apyPct: data.settings?.apyPct || 3,
             inflationPct: data.settings?.inflationPct || 4
           },
-          people: (data.people || []).map(p => ({
-            id: p.id,
-            name: p.name,
-            currentSavings: p.currentSavings || 0,
-            fixedMonthlyContribution: p.fixedMonthlyContribution || 0,
-            incomes: (p.incomes || []).map(i => ({
-              id: i.id,
-              label: i.label,
-              amount: i.amount,
-              frequency: i.frequency || 'monthly'
-            }))
-          })),
+          people: (data.people || []).map(p => {
+            const personWithIncomes = {
+              id: p.id,
+              name: p.name,
+              currentSavings: p.currentSavings || 0,
+              fixedMonthlyContribution: p.fixedMonthlyContribution || 0,
+              incomes: (p.incomes || []).map(i => ({
+                id: i.id,
+                label: i.label,
+                amount: i.amount,
+                frequency: i.frequency || 'monthly'
+              }))
+            };
+            console.log(`🔵 Loaded person ${p.id} (${p.name}) with ${personWithIncomes.incomes.length} incomes:`, personWithIncomes.incomes);
+            return personWithIncomes;
+          }),
           goals: (data.goals || []).map(g => ({
             id: g.id,
             name: g.name,
