@@ -2447,7 +2447,9 @@
           console.error('Error details:', {
             message: error.message,
             stack: error.stack,
-            personData: personData
+            personId: p.id,
+            personName: p.name,
+            incomes: p.incomes
           });
           showAlert('Failed to add income: ' + (error.message || 'Unknown error'), 'danger');
           // Remove the income from local state if save failed
