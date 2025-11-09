@@ -101,8 +101,23 @@ async function handler(req, res) {
     try {
       const { id, name, currentSavings, fixedMonthlyContribution, incomes } = req.body;
 
+      // First, verify the person exists and belongs to this tracker
+      const { data: existingPerson, error: checkError } = await supabase
+        .from('people')
+        .select('id')
+        .eq('id', id)
+        .eq('tracker_id', trackerId)
+        .single();
+
+      if (checkError || !existingPerson) {
+        return res.status(404).json({ 
+          error: 'Person not found', 
+          details: `Person with id ${id} not found in tracker ${trackerId}` 
+        });
+      }
+
       // Update person (verify it belongs to user's tracker)
-      const { error: personError } = await supabase
+      const { data: updatedPerson, error: personError } = await supabase
         .from('people')
         .update({
           name,
@@ -111,9 +126,21 @@ async function handler(req, res) {
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
-        .eq('tracker_id', trackerId); // Ensure it's in the correct tracker
+        .eq('tracker_id', trackerId)
+        .select()
+        .single();
 
-      if (personError) throw personError;
+      if (personError) {
+        console.error('Error updating person:', personError);
+        throw personError;
+      }
+
+      if (!updatedPerson) {
+        return res.status(404).json({ 
+          error: 'Person not found', 
+          details: 'Person update returned no rows' 
+        });
+      }
 
       // Delete existing incomes and insert new ones
       const { error: deleteError } = await supabase
@@ -121,7 +148,10 @@ async function handler(req, res) {
         .delete()
         .eq('person_id', id);
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error('Error deleting incomes:', deleteError);
+        throw deleteError;
+      }
 
       if (incomes && Array.isArray(incomes) && incomes.length > 0) {
         const incomesData = incomes.map(income => ({
@@ -136,7 +166,11 @@ async function handler(req, res) {
           .from('incomes')
           .insert(incomesData);
 
-        if (incomesError) throw incomesError;
+        if (incomesError) {
+          console.error('Error inserting incomes:', incomesError);
+          console.error('Incomes data:', incomesData);
+          throw incomesError;
+        }
       }
 
       res.status(200).json({ success: true });
