@@ -3197,7 +3197,7 @@
         const goal = t.goalId ? appState.goals.find(g => g.id === t.goalId) : null;
         const goalDisplay = goal ? 
           `<span class="badge bg-primary bg-opacity-20 text-white">${goal.name}</span>` : 
-          '<span class="badge bg-secondary bg-opacity-20 text-white">General</span>';
+          '<span class="badge text-white" style="background-color: rgba(255, 255, 255, 0.15);">General</span>';
           
         tr.innerHTML = `
           <td style="padding: 1rem;">${t.date}</td>
