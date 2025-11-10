@@ -2656,23 +2656,23 @@
         let statusBadge = '';
         let statusColor = '';
         if (isCompleted) {
-          statusBadge = '<span class="badge bg-success bg-opacity-20 text-success">🎉 Completed</span>';
+          statusBadge = '<span class="badge bg-success bg-opacity-20 text-white">🎉 Completed</span>';
           statusColor = '#10b981';
         } else if (isOnTrack) {
-          statusBadge = '<span class="badge bg-primary bg-opacity-20 text-primary">✅ On Track</span>';
+          statusBadge = '<span class="badge bg-primary bg-opacity-20 text-white">✅ On Track</span>';
           statusColor = '#3b82f6';
         } else {
-          statusBadge = '<span class="badge bg-warning bg-opacity-20 text-warning">⚠️ At Risk</span>';
+          statusBadge = '<span class="badge bg-warning bg-opacity-20 text-white">⚠️ At Risk</span>';
           statusColor = '#f59e0b';
         }
         
         // Priority indicator
         const priorityNum = g.priority || 999;
         const priorityBadge = priorityNum <= 3 ? 
-          `<span class="badge bg-danger bg-opacity-20 text-danger">🔥 High</span>` :
+          `<span class="badge bg-danger bg-opacity-20 text-white">🔥 High</span>` :
           priorityNum <= 5 ?
-          `<span class="badge bg-warning bg-opacity-20 text-warning">⚡ Medium</span>` :
-          `<span class="badge bg-secondary bg-opacity-20 text-secondary">📌 Low</span>`;
+          `<span class="badge bg-warning bg-opacity-20 text-white">⚡ Medium</span>` :
+          `<span class="badge bg-secondary bg-opacity-20 text-white">📌 Low</span>`;
         
         const col = document.createElement('div'); 
         col.className = 'col-12 col-md-6 col-lg-4'; // Responsive: 1 col mobile, 2 tablet, 3 desktop
@@ -3197,7 +3197,7 @@
         const goal = t.goalId ? appState.goals.find(g => g.id === t.goalId) : null;
         const goalDisplay = goal ? 
           `<span class="badge bg-primary bg-opacity-20 text-white">${goal.name}</span>` : 
-          '<span class="badge bg-secondary bg-opacity-20 text-secondary">General</span>';
+          '<span class="badge bg-secondary bg-opacity-20 text-white">General</span>';
           
         tr.innerHTML = `
           <td style="padding: 1rem;">${t.date}</td>
