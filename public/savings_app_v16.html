@@ -3232,9 +3232,26 @@
       appState.transactions.slice().sort((a,b)=> b.date.localeCompare(a.date)).forEach(t=>{
         const tr = document.createElement('tr');
         const goal = t.goalId ? appState.goals.find(g => g.id === t.goalId) : null;
-        const goalDisplay = goal ? 
-          `<span class="badge bg-primary bg-opacity-20 text-white">${goal.name}</span>` : 
-          '<span class="badge text-white" style="background-color: rgba(255, 255, 255, 0.15);">General</span>';
+        
+        let goalDisplay = '';
+        if (goal) {
+          // Calculate goal balance
+          const allocated = goalAllocatedSavings(goal.id);
+          const unallocated = ownerUnallocatedSavings(goal.owner);
+          const current = allocated + unallocated;
+          const progress = Math.min(100, (current / goal.target) * 100);
+          
+          goalDisplay = `
+            <div class="d-flex flex-column gap-1">
+              <span class="badge bg-primary bg-opacity-20 text-white">${goal.name}</span>
+              <small class="text-muted" style="font-size: 0.75rem;">
+                ${fmtMoney(current)} / ${fmtMoney(goal.target)} (${progress.toFixed(0)}%)
+              </small>
+            </div>
+          `;
+        } else {
+          goalDisplay = '<span class="badge text-white" style="background-color: rgba(255, 255, 255, 0.15);">General</span>';
+        }
           
         tr.innerHTML = `
           <td style="padding: 1rem;">${t.date}</td>
