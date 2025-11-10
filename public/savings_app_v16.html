@@ -1292,7 +1292,7 @@
   <div class="col-lg-6">
     <div class="card border-0 shadow-sm p-4">
       <h6 class="mb-3 fw-semibold">📊 Recent Transactions (6 mo)</h6>
-      <canvas height="130" id="txChart"></canvas>
+      <canvas height="130" id="txStackedChartTab"></canvas>
     </div>
   </div>
   <div class="col-lg-6">
@@ -3098,34 +3098,57 @@
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Adding...';
       
+      // Find person before try block so it's accessible in catch
+      const p = appState.people.find(x => x.name === person);
+      
       try {
         const newTx = { id:uid(), date, person, amount:amt, note, goalId };
-        await appApi.createTransaction(newTx);
         
+        // Optimistic UI update - update state immediately
         appState.transactions.unshift(newTx);
         
-        // Update person's current savings
-        const p = appState.people.find(x => x.name === person);
+        // Update person's current savings locally
         if(p) {
           p.currentSavings = (p.currentSavings || 0) + amt;
-          await appApi.updatePerson(p); // Save updated person
         }
         
+        // Clear form immediately for better UX
         $('#txAmount').value=''; $('#txNote').value=''; $('#txGoal').value = '';
         $('#goalSuggestion').style.display = 'none';
         
-        // Success feedback
+        // Update UI immediately (optimistic rendering)
+        renderTransactions();
+        buildTxCharts();
+        
+        // Re-enable button immediately
         btn.classList.add('btn-success');
         btn.innerHTML = '✅ Added!';
+        btn.disabled = false;
         
+        // Reset button appearance after brief delay
         setTimeout(() => {
           btn.classList.remove('btn-success');
           btn.innerHTML = originalText;
-          btn.disabled = false;
-        }, 1000);
+        }, 500);
         
-        saveState();
+        // Save to backend in parallel (non-blocking)
+        const savePromises = [appApi.createTransaction(newTx)];
+        if(p) {
+          savePromises.push(appApi.updatePerson(p));
+        }
+        
+        // Run API calls in parallel, handle errors silently (UI already updated)
+        Promise.all(savePromises).catch(error => {
+          console.error('Error saving transaction to backend:', error);
+          // Optionally show a subtle warning that sync failed
+          showAlert('Transaction added locally, but sync failed. Please refresh.', 'warning');
+        });
       } catch (error) {
+        // Rollback optimistic update on error
+        appState.transactions.shift();
+        if(p) {
+          p.currentSavings = (p.currentSavings || 0) - amt;
+        }
         showAlert('Failed to add transaction: ' + error.message, 'danger');
         btn.disabled = false;
         btn.innerHTML = originalText;
@@ -3173,7 +3196,7 @@
         const tr = document.createElement('tr');
         const goal = t.goalId ? appState.goals.find(g => g.id === t.goalId) : null;
         const goalDisplay = goal ? 
-          `<span class="badge bg-primary bg-opacity-20 text-primary">${goal.name}</span>` : 
+          `<span class="badge bg-primary bg-opacity-20 text-white">${goal.name}</span>` : 
           '<span class="badge bg-secondary bg-opacity-20 text-secondary">General</span>';
           
         tr.innerHTML = `
@@ -3384,7 +3407,7 @@
     }
 
     /********** CHARTS **********/
-    let contributionChart = null, consistencyChart = null, timelineChart = null, txChart = null, txChart2 = null, txStackedChart = null, monthlyContributionChart = null;
+    let contributionChart = null, consistencyChart = null, timelineChart = null, txChart = null, txChart2 = null, txStackedChart = null, txStackedChartTab = null, monthlyContributionChart = null;
     
     function buildContributionChart(){
       const ctx = $('#contributionChart'); if(contributionChart) contributionChart.destroy();
@@ -3818,6 +3841,13 @@
       if(txStackedChartEl) {
         if(txStackedChart !== null) txStackedChart.destroy();
         txStackedChart = new Chart(txStackedChartEl, { type:'bar', data:{ labels: monthLabels, datasets: ds }, options:{ scales:{ x:{stacked:true}, y:{stacked:true} } } });
+      }
+      
+      // stacked chart for transactions tab
+      const txStackedChartTabEl = $('#txStackedChartTab');
+      if(txStackedChartTabEl) {
+        if(txStackedChartTab !== null) txStackedChartTab.destroy();
+        txStackedChartTab = new Chart(txStackedChartTabEl, { type:'bar', data:{ labels: monthLabels, datasets: ds }, options:{ scales:{ x:{stacked:true}, y:{stacked:true} } } });
       }
     }
 
