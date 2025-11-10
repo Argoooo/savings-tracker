@@ -124,6 +124,27 @@ class SavingsAPI {
     return await response.json();
   }
 
+  async transferTrackerOwnership(trackerId, newOwnerId, newOwnerEmail) {
+    const url = `${API_BASE}/api/trackers`;
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.auth?.getHeaders()
+      },
+      body: JSON.stringify({ 
+        id: trackerId, 
+        newOwnerId, 
+        newOwnerEmail 
+      })
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to transfer ownership' }));
+      throw new Error(errorData.error || 'Failed to transfer ownership');
+    }
+    return await response.json();
+  }
+
   // Data operations (all require trackerId which is automatically added)
   async getAllData() {
     return await this.request('/data');

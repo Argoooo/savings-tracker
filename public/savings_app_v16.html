@@ -685,6 +685,9 @@
     <button id="btn-delete-tracker" class="btn btn-outline-danger btn-sm" style="white-space: nowrap;" title="Delete this tracker">
       🗑️ Delete
     </button>
+    <button id="btn-transfer-tracker" class="btn btn-outline-warning btn-sm" style="white-space: nowrap;" title="Transfer ownership of this tracker">
+      🔄 Transfer
+    </button>
     <button id="btn-new-tracker" class="btn btn-primary btn-sm" style="white-space: nowrap;">
       + New Tracker
     </button>
@@ -761,6 +764,38 @@
     <div style="display: flex; gap: 1rem; justify-content: flex-end;">
       <button id="btn-cancel-rename" class="btn btn-secondary">Cancel</button>
       <button id="btn-save-rename" class="btn btn-primary">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Transfer Ownership Modal -->
+<div id="transfer-tracker-modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto;">
+  <div style="background-color: var(--bg); margin: 5% auto; padding: 1.5rem; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,.15); position: relative;">
+    <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--text);">🔄 Transfer Tracker Ownership</h3>
+    <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+      Transfer ownership of "<span id="transfer-tracker-name" style="font-weight: 600; color: var(--text);"></span>" to another user. 
+      <strong style="color: var(--warning);">This action cannot be undone.</strong> You will lose owner access to this tracker.
+    </p>
+    
+    <div style="margin-bottom: 1.5rem;">
+      <label for="transfer-owner-email" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text);">
+        New Owner Email *
+      </label>
+      <input 
+        type="email" 
+        id="transfer-owner-email" 
+        placeholder="user@example.com"
+        class="form-control"
+        required
+      >
+      <small style="color: var(--muted); font-size: 0.85rem; margin-top: 0.25rem; display: block;">
+        The user must have an account. They will receive full ownership of this tracker.
+      </small>
+    </div>
+    
+    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+      <button id="btn-cancel-transfer" class="btn btn-secondary">Cancel</button>
+      <button id="btn-confirm-transfer" class="btn btn-warning">Transfer Ownership</button>
     </div>
   </div>
 </div>
@@ -1818,6 +1853,8 @@
           initializeRenameTrackerUI(trackerManager);
           // Initialize delete tracker UI
           initializeDeleteTrackerUI(trackerManager);
+          // Initialize transfer ownership UI
+          initializeTransferTrackerUI(trackerManager);
           // Show tracker switcher
           const trackerSwitcher = document.getElementById('trackerSwitcher');
           if (trackerSwitcher) {
@@ -3320,6 +3357,11 @@
           const oldPerson = appState.people.find(p => p.name === tx.person);
           const newPersonObj = appState.people.find(p => p.name === newPerson);
           
+          // Store original values for rollback
+          const originalTx = { ...tx };
+          const originalOldPerson = oldPerson ? { ...oldPerson } : null;
+          const originalNewPerson = newPersonObj ? { ...newPersonObj } : null;
+          
           if(oldPerson) {
             oldPerson.currentSavings = (oldPerson.currentSavings || 0) - tx.amount;
           }
@@ -3327,15 +3369,16 @@
             newPersonObj.currentSavings = (newPersonObj.currentSavings || 0) + newAmount;
           }
           
-          // Update transaction
+          // Update transaction locally
           tx.date = newDate;
           tx.amount = newAmount;
           tx.person = newPerson;
           tx.goalId = newGoalId;
           tx.note = newNote;
-          tx.lastModified = new Date().toISOString();
           
-          saveState();
+          // Update UI immediately (optimistic update)
+          renderTransactions();
+          buildTxCharts();
           modal.hide();
           
           // Success feedback
@@ -3352,6 +3395,46 @@
               btn.classList.add('btn-outline-primary');
             }, 2000);
           }
+          
+          // Save to backend
+          const savePromises = [
+            appApi.updateTransaction({
+              id: tx.id,
+              date: newDate,
+              person: newPerson,
+              amount: newAmount,
+              note: newNote,
+              goalId: newGoalId
+            })
+          ];
+          
+          // Update people if they changed
+          if(oldPerson && oldPerson !== newPersonObj) {
+            // Person changed - update both old and new person
+            savePromises.push(appApi.updatePerson(oldPerson));
+            if(newPersonObj) {
+              savePromises.push(appApi.updatePerson(newPersonObj));
+            }
+          } else if(newPersonObj && oldPerson === newPersonObj) {
+            // Same person - just update once
+            savePromises.push(appApi.updatePerson(newPersonObj));
+          } else if(newPersonObj && !oldPerson) {
+            // New person only (old person not found)
+            savePromises.push(appApi.updatePerson(newPersonObj));
+          }
+          
+          // Run API calls in parallel
+          Promise.all(savePromises).catch(error => {
+            console.error('Error saving transaction edit to backend:', error);
+            // Rollback local changes
+            Object.assign(tx, originalTx);
+            if(originalOldPerson) Object.assign(oldPerson, originalOldPerson);
+            if(originalNewPerson) Object.assign(newPersonObj, originalNewPerson);
+            // Re-render to show original values
+            renderTransactions();
+            buildTxCharts();
+            showAlert('Failed to save changes: ' + (error.message || 'Unknown error'), 'danger');
+          });
         });
       }));
 
@@ -4384,6 +4467,112 @@
           deleteBtn.textContent = originalText;
         }
       });
+    }
+
+    // Transfer Ownership UI Functions
+    function initializeTransferTrackerUI(trackerManager) {
+      const transferBtn = document.getElementById('btn-transfer-tracker');
+      const transferModal = document.getElementById('transfer-tracker-modal');
+      const cancelTransferBtn = document.getElementById('btn-cancel-transfer');
+      const confirmTransferBtn = document.getElementById('btn-confirm-transfer');
+      
+      if (!transferBtn || !transferModal) {
+        console.warn('Transfer tracker UI elements not found');
+        return;
+      }
+
+      // Open transfer modal
+      transferBtn.addEventListener('click', () => {
+        const currentTracker = trackerManager.getCurrentTracker();
+        if (!currentTracker) {
+          showAlert('No tracker selected', 'danger');
+          return;
+        }
+        
+        // Check if user is owner
+        if (!currentTracker.isOwner) {
+          showAlert('Only tracker owners can transfer ownership', 'warning');
+          return;
+        }
+        
+        // Populate tracker name
+        document.getElementById('transfer-tracker-name').textContent = currentTracker.name;
+        document.getElementById('transfer-owner-email').value = '';
+        transferModal.style.display = 'block';
+        document.getElementById('transfer-owner-email').focus();
+      });
+
+      // Close transfer modal
+      if (cancelTransferBtn) {
+        cancelTransferBtn.addEventListener('click', () => {
+          transferModal.style.display = 'none';
+        });
+      }
+
+      // Close on outside click
+      transferModal.addEventListener('click', (e) => {
+        if (e.target === transferModal) {
+          transferModal.style.display = 'none';
+        }
+      });
+
+      // Confirm transfer
+      if (confirmTransferBtn) {
+        confirmTransferBtn.addEventListener('click', async () => {
+          const emailInput = document.getElementById('transfer-owner-email');
+          const currentTracker = trackerManager.getCurrentTracker();
+          
+          if (!currentTracker) {
+            showAlert('No tracker selected', 'danger');
+            return;
+          }
+          
+          const email = emailInput.value.trim().toLowerCase();
+          
+          if (!email) {
+            showAlert('Please enter an email address', 'warning');
+            return;
+          }
+          
+          // Validate email format
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email)) {
+            showAlert('Please enter a valid email address', 'warning');
+            return;
+          }
+          
+          // Final confirmation
+          const confirmed = confirm(
+            `Are you sure you want to transfer ownership of "${currentTracker.name}" to ${email}?\n\n` +
+            `This action cannot be undone. You will lose owner access to this tracker.`
+          );
+          
+          if (!confirmed) {
+            return;
+          }
+          
+          try {
+            confirmTransferBtn.disabled = true;
+            confirmTransferBtn.textContent = 'Transferring...';
+            
+            await trackerManager.transferOwnership(currentTracker.id, null, email);
+            
+            showAlert('Tracker ownership transferred successfully!', 'success');
+            transferModal.style.display = 'none';
+            
+            // Reload page to refresh tracker list and data
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } catch (error) {
+            console.error('Error transferring tracker ownership:', error);
+            showAlert('Failed to transfer ownership: ' + (error.message || 'Unknown error'), 'danger');
+          } finally {
+            confirmTransferBtn.disabled = false;
+            confirmTransferBtn.textContent = 'Transfer Ownership';
+          }
+        });
+      }
     }
 
   </script>

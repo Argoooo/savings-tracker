@@ -150,6 +150,93 @@ async function handler(req, res) {
       console.error('Error deleting tracker:', error);
       res.status(500).json({ error: 'Failed to delete tracker', details: error.message });
     }
+  } else if (req.method === 'PATCH') {
+    // Transfer ownership
+    try {
+      const { id, newOwnerId, newOwnerEmail } = req.body;
+
+      if (!id) {
+        return res.status(400).json({ error: 'Tracker ID is required' });
+      }
+
+      if (!newOwnerId && !newOwnerEmail) {
+        return res.status(400).json({ error: 'Either newOwnerId or newOwnerEmail is required' });
+      }
+
+      // Verify user owns the tracker
+      const { data: tracker, error: trackerError } = await supabase
+        .from('trackers')
+        .select('id, user_id')
+        .eq('id', id)
+        .single();
+
+      if (trackerError || !tracker) {
+        return res.status(404).json({ error: 'Tracker not found' });
+      }
+
+      if (tracker.user_id !== userId) {
+        return res.status(403).json({ error: 'Only tracker owner can transfer ownership' });
+      }
+
+      // Look up new owner by email if needed
+      let targetUserId = newOwnerId;
+      if (newOwnerEmail && !targetUserId) {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseAdmin = createClient(
+          process.env.SUPABASE_URL,
+          process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+        );
+
+        const { data: users, error: userError } = await supabaseAdmin.auth.admin.listUsers();
+        
+        if (userError) {
+          console.error('Error looking up user by email:', userError);
+          return res.status(500).json({ error: 'Failed to look up user by email', details: userError.message });
+        }
+
+        const user = users?.users?.find(u => u.email?.toLowerCase() === newOwnerEmail.toLowerCase());
+        
+        if (!user) {
+          return res.status(404).json({ error: `User with email "${newOwnerEmail}" not found. They need to sign up first.` });
+        }
+
+        targetUserId = user.id;
+      }
+
+      if (targetUserId === userId) {
+        return res.status(400).json({ error: 'Cannot transfer tracker to yourself' });
+      }
+
+      // Transfer ownership: Update tracker's user_id
+      const { error: updateError } = await supabase
+        .from('trackers')
+        .update({
+          user_id: targetUserId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (updateError) throw updateError;
+
+      // Remove any existing shares between old owner and new owner for this tracker
+      await supabase
+        .from('tracker_shares')
+        .delete()
+        .eq('tracker_id', id)
+        .eq('shared_with_user_id', targetUserId);
+
+      // Remove old owner's share access if they had any
+      await supabase
+        .from('tracker_shares')
+        .delete()
+        .eq('tracker_id', id)
+        .eq('shared_with_user_id', userId);
+
+      res.status(200).json({ success: true, message: 'Tracker ownership transferred successfully' });
+    } catch (error) {
+      console.error('Error transferring tracker ownership:', error);
+      res.status(500).json({ error: 'Failed to transfer tracker ownership', details: error.message });
+    }
   } else {
     res.status(405).json({ error: 'Method not allowed' });
   }
