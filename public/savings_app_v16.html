@@ -1265,6 +1265,7 @@
             <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Date</th>
             <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Person</th>
             <th class="text-end" style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Amount</th>
+            <th class="text-end" style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Balance</th>
             <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Goal</th>
             <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Note</th>
             <th style="padding: 1rem; width: 100px;"></th>
@@ -3252,9 +3253,22 @@
 
       // table
       tableBody.innerHTML='';
+      
+      // Calculate running balances: sort by date ascending, calculate cumulative sum
+      const sortedByDateAsc = appState.transactions.slice().sort((a,b)=> a.date.localeCompare(b.date));
+      const balanceMap = new Map();
+      let runningBalance = 0;
+      
+      sortedByDateAsc.forEach(t => {
+        runningBalance += Number(t.amount || 0);
+        balanceMap.set(t.id, runningBalance);
+      });
+      
+      // Display transactions sorted by date descending (newest first)
       appState.transactions.slice().sort((a,b)=> b.date.localeCompare(a.date)).forEach(t=>{
         const tr = document.createElement('tr');
         const goal = t.goalId ? appState.goals.find(g => g.id === t.goalId) : null;
+        const balance = balanceMap.get(t.id) || 0;
         
         let goalDisplay = '';
         if (goal) {
@@ -3280,6 +3294,7 @@
           <td style="padding: 1rem;">${t.date}</td>
           <td style="padding: 1rem;">${t.person}</td>
           <td class="text-end" style="padding: 1rem; font-weight: 600; color: var(--text);">${fmtMoney(t.amount)}</td>
+          <td class="text-end" style="padding: 1rem; font-weight: 600; color: #10b981;">${fmtMoney(balance)}</td>
           <td style="padding: 1rem;">${goalDisplay}</td>
           <td style="padding: 1rem; color: var(--muted);">${t.note||'—'}</td>
           <td style="padding: 1rem;">
