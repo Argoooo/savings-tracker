@@ -163,6 +163,13 @@ async function handler(req, res) {
         return res.status(400).json({ error: 'Either newOwnerId or newOwnerEmail is required' });
       }
 
+      // Create admin client for ownership transfer (bypasses RLS)
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseAdmin = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+      );
+
       // Verify user owns the tracker
       const { data: tracker, error: trackerError } = await supabase
         .from('trackers')
@@ -181,12 +188,6 @@ async function handler(req, res) {
       // Look up new owner by email if needed
       let targetUserId = newOwnerId;
       if (newOwnerEmail && !targetUserId) {
-        const { createClient } = await import('@supabase/supabase-js');
-        const supabaseAdmin = createClient(
-          process.env.SUPABASE_URL,
-          process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
-        );
-
         const { data: users, error: userError } = await supabaseAdmin.auth.admin.listUsers();
         
         if (userError) {
@@ -207,8 +208,8 @@ async function handler(req, res) {
         return res.status(400).json({ error: 'Cannot transfer tracker to yourself' });
       }
 
-      // Transfer ownership: Update tracker's user_id
-      const { error: updateError } = await supabase
+      // Transfer ownership: Update tracker's user_id using admin client to bypass RLS
+      const { error: updateError } = await supabaseAdmin
         .from('trackers')
         .update({
           user_id: targetUserId,
@@ -219,14 +220,15 @@ async function handler(req, res) {
       if (updateError) throw updateError;
 
       // Remove any existing shares between old owner and new owner for this tracker
-      await supabase
+      // Use admin client to ensure we can delete shares regardless of RLS
+      await supabaseAdmin
         .from('tracker_shares')
         .delete()
         .eq('tracker_id', id)
         .eq('shared_with_user_id', targetUserId);
 
       // Remove old owner's share access if they had any
-      await supabase
+      await supabaseAdmin
         .from('tracker_shares')
         .delete()
         .eq('tracker_id', id)
