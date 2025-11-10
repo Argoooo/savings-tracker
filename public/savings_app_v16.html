@@ -2338,8 +2338,8 @@
                     <div class="text-muted small mb-1" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Monthly Contribution</div>
                     <div class="fw-bold fs-5" style="color: var(--brand);">${fmtMoney(totalContribution)}</div>
                     <div class="small text-muted mt-1">
-                      ${monthly > 0 ? `<span class="badge bg-primary bg-opacity-20 text-primary me-1">Rate: ${fmtMoney(monthly)}</span>` : ''}
-                      ${fixedContrib > 0 ? `<span class="badge bg-success bg-opacity-20 text-success">Fixed: ${fmtMoney(fixedContrib)}</span>` : ''}
+                      ${monthly > 0 ? `<span class="badge bg-primary bg-opacity-20 text-white me-1">Rate: ${fmtMoney(monthly)}</span>` : ''}
+                      ${fixedContrib > 0 ? `<span class="badge bg-success bg-opacity-20 text-white">Fixed: ${fmtMoney(fixedContrib)}</span>` : ''}
                       ${totalContribution === 0 ? '<span class="text-muted">No contribution set</span>' : ''}
                     </div>
                   </div>
