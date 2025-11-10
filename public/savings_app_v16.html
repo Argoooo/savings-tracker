@@ -4310,6 +4310,13 @@
         return;
       }
       
+      // Check if transferOwnership method exists
+      if (!trackerManager || typeof trackerManager.transferOwnership !== 'function') {
+        console.error('transferOwnership method not available on trackerManager');
+        showAlert('Transfer ownership feature not available. Please refresh the page.', 'danger');
+        return;
+      }
+      
       // Determine if it's an email or user ID
       const isEmail = userEmailOrId.includes('@');
       const email = isEmail ? userEmailOrId : null;
