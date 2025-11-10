@@ -1806,6 +1806,66 @@
           };
         }
         
+        // Workaround: Manually add transferOwnership method if missing (cache issue)
+        if (!trackerManager.transferOwnership) {
+          console.warn('⚠️ transferOwnership missing, adding manually...');
+          trackerManager.transferOwnership = async function(trackerId, newOwnerId, newOwnerEmail) {
+            try {
+              await this.api.transferTrackerOwnership(trackerId, newOwnerId, newOwnerEmail);
+              
+              // Reload trackers list to reflect ownership change
+              this.trackers = await this.api.getTrackers();
+              
+              // If transferred tracker was current, we might lose access
+              const currentTracker = this.trackers.find(t => t.id === trackerId);
+              if (!currentTracker || !currentTracker.isOwner) {
+                // Switch to first owned tracker or create new one
+                const ownedTracker = this.trackers.find(t => t.isOwner);
+                if (ownedTracker) {
+                  await this.switchTracker(ownedTracker.id);
+                } else {
+                  const newTracker = await this.createTracker('My Savings Tracker', '');
+                }
+              }
+              
+              // Dispatch event
+              window.dispatchEvent(new CustomEvent('tracker-ownership-transferred', {
+                detail: { trackerId }
+              }));
+              
+              return true;
+            } catch (error) {
+              console.error('Error transferring tracker ownership:', error);
+              throw error;
+            }
+          };
+        }
+        
+        // Also ensure transferTrackerOwnership exists on API
+        if (!appApi.transferTrackerOwnership) {
+          console.warn('⚠️ transferTrackerOwnership missing on API, adding manually...');
+          appApi.transferTrackerOwnership = async function(trackerId, newOwnerId, newOwnerEmail) {
+            const url = `${window.location.origin}/api/trackers`;
+            const response = await fetch(url, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                ...this.auth?.getHeaders()
+              },
+              body: JSON.stringify({ 
+                id: trackerId, 
+                newOwnerId, 
+                newOwnerEmail 
+              })
+            });
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({ error: 'Failed to transfer ownership' }));
+              throw new Error(errorData.error || 'Failed to transfer ownership');
+            }
+            return await response.json();
+          };
+        }
+        
         console.log('✅ API initialized');
         
         // Initialize tracker UI
