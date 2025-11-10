@@ -129,6 +129,38 @@ class TrackerManager {
       throw error;
     }
   }
+
+  // Transfer tracker ownership
+  async transferOwnership(trackerId, newOwnerId, newOwnerEmail) {
+    try {
+      await this.api.transferTrackerOwnership(trackerId, newOwnerId, newOwnerEmail);
+      
+      // Reload trackers list to reflect ownership change
+      this.trackers = await this.api.getTrackers();
+      
+      // If transferred tracker was current, we might lose access
+      const currentTracker = this.trackers.find(t => t.id === trackerId);
+      if (!currentTracker || !currentTracker.isOwner) {
+        // Switch to first owned tracker or create new one
+        const ownedTracker = this.trackers.find(t => t.isOwner);
+        if (ownedTracker) {
+          await this.switchTracker(ownedTracker.id);
+        } else {
+          const newTracker = await this.createTracker('My Savings Tracker', '');
+        }
+      }
+      
+      // Dispatch event
+      window.dispatchEvent(new CustomEvent('tracker-ownership-transferred', {
+        detail: { trackerId }
+      }));
+      
+      return true;
+    } catch (error) {
+      console.error('Error transferring tracker ownership:', error);
+      throw error;
+    }
+  }
 }
 
 // UI Helper Functions
