@@ -959,16 +959,7 @@
 <!-- Add Person Card -->
 <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(89, 162, 255, 0.1) 0%, rgba(138, 125, 255, 0.1) 100%); border-radius: 16px;">
   <div class="card-body p-4">
-    <div class="d-flex align-items-center mb-3" id="addPersonHeader">
-      <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, var(--brand2), var(--brand)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-        👤
-      </div>
-      <div>
-        <h5 class="mb-0" style="font-weight: 600;">Add New Contributor</h5>
-        <small class="text-muted">Track savings and income for household members</small>
-      </div>
-    </div>
-    <div class="d-flex align-items-center justify-content-between mb-3" id="addPersonHeaderCollapsed" style="display: none;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
       <div class="d-flex align-items-center">
         <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, var(--brand2), var(--brand)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
           👤
@@ -979,7 +970,7 @@
         </div>
       </div>
       <button class="btn btn-sm btn-outline-secondary" id="toggleAddPerson" style="border-radius: 8px; padding: 0.25rem 0.5rem;" title="Toggle form">
-        <span id="toggleAddPersonIcon">▼</span>
+        <span id="toggleAddPersonIcon">▲</span>
       </button>
     </div>
     <div class="row g-3 mt-2" id="addPersonForm">
@@ -1022,16 +1013,7 @@
 <!-- Add Goal Card -->
 <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border-radius: 16px;">
   <div class="card-body p-4">
-    <div class="d-flex align-items-center mb-3" id="addGoalHeader">
-      <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-        🎯
-      </div>
-      <div>
-        <h5 class="mb-0" style="font-weight: 600;">Add New Goal</h5>
-        <small class="text-muted">Set financial targets and track your progress</small>
-      </div>
-    </div>
-    <div class="d-flex align-items-center justify-content-between mb-3" id="addGoalHeaderCollapsed" style="display: none;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
       <div class="d-flex align-items-center">
         <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
           🎯
@@ -1042,7 +1024,7 @@
         </div>
       </div>
       <button class="btn btn-sm btn-outline-secondary" id="toggleAddGoal" style="border-radius: 8px; padding: 0.25rem 0.5rem;" title="Toggle form">
-        <span id="toggleAddGoalIcon">▼</span>
+        <span id="toggleAddGoalIcon">▲</span>
       </button>
     </div>
     <div class="row g-3 mt-2" id="addGoalForm">
@@ -1210,16 +1192,7 @@
 <!-- Add Transaction Card -->
 <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border-radius: 16px;">
   <div class="card-body p-4">
-    <div class="d-flex align-items-center mb-3" id="addTxHeader">
-      <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-        💳
-      </div>
-      <div>
-        <h5 class="mb-0" style="font-weight: 600;">Add Savings Transaction</h5>
-        <small class="text-muted">Record your savings contributions</small>
-      </div>
-    </div>
-    <div class="d-flex align-items-center justify-content-between mb-3" id="addTxHeaderCollapsed" style="display: none;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
       <div class="d-flex align-items-center">
         <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
           💳
@@ -1230,7 +1203,7 @@
         </div>
       </div>
       <button class="btn btn-sm btn-outline-secondary" id="toggleAddTx" style="border-radius: 8px; padding: 0.25rem 0.5rem;" title="Toggle form">
-        <span id="toggleAddTxIcon">▼</span>
+        <span id="toggleAddTxIcon">▲</span>
       </button>
     </div>
     <div class="row g-3 mt-2" id="addTxForm">
@@ -1791,13 +1764,9 @@
       $('#toggleAddPerson')?.addEventListener('click', () => {
         const form = $('#addPersonForm');
         const icon = $('#toggleAddPersonIcon');
-        const headerExpanded = $('#addPersonHeader');
-        const headerCollapsed = $('#addPersonHeaderCollapsed');
-        if(form && icon && headerExpanded && headerCollapsed) {
+        if(form && icon) {
           const isVisible = form.style.display !== 'none';
           form.style.display = isVisible ? 'none' : 'block';
-          headerExpanded.style.display = isVisible ? 'none' : 'flex';
-          headerCollapsed.style.display = isVisible ? 'flex' : 'none';
           icon.textContent = isVisible ? '▼' : '▲';
         }
       });
@@ -1806,13 +1775,9 @@
       $('#toggleAddGoal')?.addEventListener('click', () => {
         const form = $('#addGoalForm');
         const icon = $('#toggleAddGoalIcon');
-        const headerExpanded = $('#addGoalHeader');
-        const headerCollapsed = $('#addGoalHeaderCollapsed');
-        if(form && icon && headerExpanded && headerCollapsed) {
+        if(form && icon) {
           const isVisible = form.style.display !== 'none';
           form.style.display = isVisible ? 'none' : 'block';
-          headerExpanded.style.display = isVisible ? 'none' : 'flex';
-          headerCollapsed.style.display = isVisible ? 'flex' : 'none';
           icon.textContent = isVisible ? '▼' : '▲';
         }
       });
@@ -1821,13 +1786,9 @@
       $('#toggleAddTx')?.addEventListener('click', () => {
         const form = $('#addTxForm');
         const icon = $('#toggleAddTxIcon');
-        const headerExpanded = $('#addTxHeader');
-        const headerCollapsed = $('#addTxHeaderCollapsed');
-        if(form && icon && headerExpanded && headerCollapsed) {
+        if(form && icon) {
           const isVisible = form.style.display !== 'none';
           form.style.display = isVisible ? 'none' : 'block';
-          headerExpanded.style.display = isVisible ? 'none' : 'flex';
-          headerCollapsed.style.display = isVisible ? 'flex' : 'none';
           icon.textContent = isVisible ? '▼' : '▲';
         }
       });
