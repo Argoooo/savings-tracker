@@ -2542,7 +2542,7 @@
       $all('#peopleList [data-act="toggleIncome"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           const pid = btn.dataset.pid;
-          const incomeList = document.getElementById(`incomeList_${pid}`);
+          const incomeList = document.getElementById(`income-${pid}`);
           const icon = document.getElementById(`toggleIncomeIcon_${pid}`);
           if (incomeList) {
             if (incomeList.style.display === 'none') {
