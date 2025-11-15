@@ -3254,34 +3254,48 @@
       // table
       tableBody.innerHTML='';
       
-      // Calculate running balances: sort by date ascending, then by ID for consistent ordering
+      // Assign colors to goals
+      const goalColors = [
+        { bg: 'rgba(59, 130, 246, 0.2)', text: '#3b82f6' }, // Blue
+        { bg: 'rgba(16, 185, 129, 0.2)', text: '#10b981' }, // Green
+        { bg: 'rgba(139, 92, 246, 0.2)', text: '#8b5cf6' }, // Purple
+        { bg: 'rgba(245, 158, 11, 0.2)', text: '#f59e0b' }, // Orange
+        { bg: 'rgba(236, 72, 153, 0.2)', text: '#ec4899' }, // Pink
+        { bg: 'rgba(6, 182, 212, 0.2)', text: '#06b6d4' }, // Cyan
+        { bg: 'rgba(239, 68, 68, 0.2)', text: '#ef4444' }, // Red
+        { bg: 'rgba(34, 197, 94, 0.2)', text: '#22c55e' }, // Emerald
+      ];
+      const goalColorMap = new Map();
+      appState.goals.forEach((goal, idx) => {
+        goalColorMap.set(goal.id, goalColors[idx % goalColors.length]);
+      });
+      
+      // Calculate running balances PER GOAL: sort by date ascending, then by ID
       const sortedByDateAsc = appState.transactions.slice().sort((a,b)=> {
         const dateCompare = a.date.localeCompare(b.date);
         if (dateCompare !== 0) return dateCompare;
-        // If same date, sort by ID for consistent ordering
         return a.id.localeCompare(b.id);
       });
+      
+      // Group transactions by goal and calculate running balance for each
       const balanceMap = new Map();
-      let runningBalance = 0;
+      const goalBalances = new Map(); // Track running balance per goal
       
       sortedByDateAsc.forEach(t => {
         const amount = Number(t.amount) || 0;
         if (!isFinite(amount) || amount < 0) {
           console.warn('⚠️ Invalid transaction amount:', t);
         }
-        runningBalance += amount;
-        balanceMap.set(t.id, runningBalance);
+        
+        // Get goal key (goalId or 'general')
+        const goalKey = t.goalId || 'general';
+        const currentGoalBalance = goalBalances.get(goalKey) || 0;
+        const newGoalBalance = currentGoalBalance + amount;
+        goalBalances.set(goalKey, newGoalBalance);
+        
+        // Store balance for this transaction
+        balanceMap.set(t.id, newGoalBalance);
       });
-      
-      // Verify: The final balance should equal the total of all transactions
-      const totalFromTransactions = txTotal();
-      if (Math.abs(runningBalance - totalFromTransactions) > 0.01) {
-        console.warn('⚠️ Balance calculation mismatch:', {
-          calculatedBalance: runningBalance,
-          totalFromTransactions: totalFromTransactions,
-          difference: runningBalance - totalFromTransactions
-        });
-      }
       
       // Display transactions sorted by date descending (newest first)
       appState.transactions.slice().sort((a,b)=> b.date.localeCompare(a.date)).forEach(t=>{
@@ -3291,7 +3305,8 @@
         
         let goalDisplay = '';
         if (goal) {
-          goalDisplay = `<span class="badge bg-primary bg-opacity-20 text-white">${goal.name}</span>`;
+          const color = goalColorMap.get(goal.id) || goalColors[0];
+          goalDisplay = `<span class="badge text-white" style="background-color: ${color.bg}; border: 1px solid ${color.text}40;">${goal.name}</span>`;
         } else {
           goalDisplay = '<span class="badge text-white" style="background-color: rgba(255, 255, 255, 0.15);">General</span>';
         }
