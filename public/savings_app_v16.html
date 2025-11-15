@@ -623,6 +623,21 @@
   <div id="loadingStatus" style="color: var(--muted); font-size: 0.875rem;"></div>
 </div>
 
+<!-- CRUD Operation Loading Popup -->
+<div id="crudLoadingPopup" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 10000; min-width: 280px; max-width: 400px;">
+  <div style="background: var(--panel); border-radius: 12px; padding: 1rem; box-shadow: 0 8px 24px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,.1);">
+    <div class="d-flex align-items-center gap-3">
+      <div class="spinner-border spinner-border-sm text-primary" role="status" style="width: 1.5rem; height: 1.5rem; flex-shrink: 0;">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <div class="flex-grow-1">
+        <div id="crudLoadingMessage" style="color: var(--text); font-weight: 500; font-size: 0.9rem;">Processing...</div>
+        <div id="crudLoadingDetails" style="color: var(--muted); font-size: 0.8rem; margin-top: 0.25rem;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <nav class="navbar navbar-expand-lg border-bottom" style="display: none; background: var(--panel); border-color: rgba(255,255,255,.08) !important;" id="mainNav">
 <div class="container-fluid">
 <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#" style="color: var(--text); font-size: 1.25rem;">
@@ -1661,6 +1676,39 @@
     });
 
     /********** UTILITY FUNCTIONS **********/
+    // CRUD Loading Popup Functions
+    function showCrudLoading(message, details = '') {
+      const popup = $('#crudLoadingPopup');
+      const messageEl = $('#crudLoadingMessage');
+      const detailsEl = $('#crudLoadingDetails');
+      
+      if (popup && messageEl) {
+        messageEl.textContent = message;
+        if (detailsEl) {
+          detailsEl.textContent = details;
+        }
+        popup.style.display = 'block';
+        
+        // Add fade-in animation
+        popup.style.opacity = '0';
+        popup.style.transition = 'opacity 0.2s ease-in';
+        setTimeout(() => {
+          popup.style.opacity = '1';
+        }, 10);
+      }
+    }
+    
+    function hideCrudLoading() {
+      const popup = $('#crudLoadingPopup');
+      if (popup) {
+        popup.style.opacity = '0';
+        popup.style.transition = 'opacity 0.2s ease-out';
+        setTimeout(() => {
+          popup.style.display = 'none';
+        }, 200);
+      }
+    }
+    
     // Simple alert function for user notifications
     function showAlert(message, type = 'info') {
       // For now, use browser alert. Can be enhanced with a toast notification system later
