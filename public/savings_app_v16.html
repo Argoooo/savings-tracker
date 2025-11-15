@@ -961,16 +961,21 @@
 <!-- Add Person Card -->
 <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(89, 162, 255, 0.1) 0%, rgba(138, 125, 255, 0.1) 100%); border-radius: 16px;">
   <div class="card-body p-4">
-    <div class="d-flex align-items-center mb-3">
-      <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, var(--brand2), var(--brand)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-        👤
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="d-flex align-items-center">
+        <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, var(--brand2), var(--brand)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+          👤
+        </div>
+        <div>
+          <h5 class="mb-0" style="font-weight: 600;">Add New Contributor</h5>
+          <small class="text-muted">Track savings and income for household members</small>
+        </div>
       </div>
-      <div>
-        <h5 class="mb-0" style="font-weight: 600;">Add New Contributor</h5>
-        <small class="text-muted">Track savings and income for household members</small>
-      </div>
+      <button class="btn btn-sm btn-outline-secondary" id="toggleAddPerson" style="border-radius: 8px; padding: 0.25rem 0.5rem;" title="Toggle form">
+        <span id="toggleAddPersonIcon">▼</span>
+      </button>
     </div>
-    <div class="row g-3 mt-2">
+    <div class="row g-3 mt-2" id="addPersonForm" style="display: none;">
       <div class="col-md-4">
         <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Name</label>
         <input class="form-control form-control-lg" id="personName" placeholder="e.g., Michael" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
@@ -1010,16 +1015,21 @@
 <!-- Add Goal Card -->
 <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border-radius: 16px;">
   <div class="card-body p-4">
-    <div class="d-flex align-items-center mb-3">
-      <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-        🎯
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="d-flex align-items-center">
+        <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+          🎯
+        </div>
+        <div>
+          <h5 class="mb-0" style="font-weight: 600;">Add New Goal</h5>
+          <small class="text-muted">Set financial targets and track your progress</small>
+        </div>
       </div>
-      <div>
-        <h5 class="mb-0" style="font-weight: 600;">Add New Goal</h5>
-        <small class="text-muted">Set financial targets and track your progress</small>
-      </div>
+      <button class="btn btn-sm btn-outline-secondary" id="toggleAddGoal" style="border-radius: 8px; padding: 0.25rem 0.5rem;" title="Toggle form">
+        <span id="toggleAddGoalIcon">▼</span>
+      </button>
     </div>
-    <div class="row g-3 mt-2">
+    <div class="row g-3 mt-2" id="addGoalForm" style="display: none;">
       <div class="col-md-3">
         <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Goal Name</label>
         <input class="form-control form-control-lg" id="goalName" placeholder="Emergency Fund" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
@@ -1184,16 +1194,21 @@
 <!-- Add Transaction Card -->
 <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border-radius: 16px;">
   <div class="card-body p-4">
-    <div class="d-flex align-items-center mb-3">
-      <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-        💳
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="d-flex align-items-center">
+        <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+          💳
+        </div>
+        <div>
+          <h5 class="mb-0" style="font-weight: 600;">Add Savings Transaction</h5>
+          <small class="text-muted">Record your savings contributions</small>
+        </div>
       </div>
-      <div>
-        <h5 class="mb-0" style="font-weight: 600;">Add Savings Transaction</h5>
-        <small class="text-muted">Record your savings contributions</small>
-      </div>
+      <button class="btn btn-sm btn-outline-secondary" id="toggleAddTx" style="border-radius: 8px; padding: 0.25rem 0.5rem;" title="Toggle form">
+        <span id="toggleAddTxIcon">▼</span>
+      </button>
     </div>
-    <div class="row g-3 mt-2">
+    <div class="row g-3 mt-2" id="addTxForm" style="display: none;">
       <div class="col-md-3">
         <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Date</label>
         <input class="form-control form-control-lg" id="txDate" type="date" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
@@ -1778,6 +1793,42 @@
     let appState = JSON.parse(JSON.stringify(defaultState));
 
     // Initialize app with authentication
+    // Toggle form functions
+    function setupFormToggles() {
+      // Toggle Add Person form
+      $('#toggleAddPerson')?.addEventListener('click', () => {
+        const form = $('#addPersonForm');
+        const icon = $('#toggleAddPersonIcon');
+        if(form && icon) {
+          const isVisible = form.style.display !== 'none';
+          form.style.display = isVisible ? 'none' : 'block';
+          icon.textContent = isVisible ? '▼' : '▲';
+        }
+      });
+      
+      // Toggle Add Goal form
+      $('#toggleAddGoal')?.addEventListener('click', () => {
+        const form = $('#addGoalForm');
+        const icon = $('#toggleAddGoalIcon');
+        if(form && icon) {
+          const isVisible = form.style.display !== 'none';
+          form.style.display = isVisible ? 'none' : 'block';
+          icon.textContent = isVisible ? '▼' : '▲';
+        }
+      });
+      
+      // Toggle Add Transaction form
+      $('#toggleAddTx')?.addEventListener('click', () => {
+        const form = $('#addTxForm');
+        const icon = $('#toggleAddTxIcon');
+        if(form && icon) {
+          const isVisible = form.style.display !== 'none';
+          form.style.display = isVisible ? 'none' : 'block';
+          icon.textContent = isVisible ? '▼' : '▲';
+        }
+      });
+    }
+    
     async function initializeApp() {
       try {
         updateLoadingStatus('Initializing tracker manager...');
@@ -1963,6 +2014,9 @@
         } else {
           console.error('❌ Cannot initialize share tracker UI - appApi is null');
         }
+        
+        // Setup form toggles
+        setupFormToggles();
         
         // Small delay before hiding loading screen for smooth transition
         setTimeout(() => {
@@ -2435,7 +2489,7 @@
                     <div class="text-muted small mb-1" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Monthly Contribution</div>
                     <div class="fw-bold fs-5" style="color: var(--brand);">${fmtMoney(totalContribution)}</div>
                     <div class="small text-muted mt-1">
-                      ${monthly > 0 ? `<span class="badge bg-primary bg-opacity-20 text-white me-1">Rate: ${fmtMoney(monthly)}</span>` : ''}
+                      ${monthly > 0 ? `<span class="badge bg-primary bg-opacity-20 text-white me-1">📊 Rate-based</span>` : ''}
                       ${fixedContrib > 0 ? `<span class="badge bg-success bg-opacity-20 text-white">Fixed: ${fmtMoney(fixedContrib)}</span>` : ''}
                       ${totalContribution === 0 ? '<span class="text-muted">No contribution set</span>' : ''}
                     </div>
