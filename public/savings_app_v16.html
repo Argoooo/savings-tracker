@@ -623,21 +623,6 @@
   <div id="loadingStatus" style="color: var(--muted); font-size: 0.875rem;"></div>
 </div>
 
-<!-- CRUD Operation Loading Popup -->
-<div id="crudLoadingPopup" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 10000; min-width: 280px; max-width: 400px;">
-  <div style="background: var(--panel); border-radius: 12px; padding: 1rem; box-shadow: 0 8px 24px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,.1);">
-    <div class="d-flex align-items-center gap-3">
-      <div class="spinner-border spinner-border-sm text-primary" role="status" style="width: 1.5rem; height: 1.5rem; flex-shrink: 0;">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-      <div class="flex-grow-1">
-        <div id="crudLoadingMessage" style="color: var(--text); font-weight: 500; font-size: 0.9rem;">Processing...</div>
-        <div id="crudLoadingDetails" style="color: var(--muted); font-size: 0.8rem; margin-top: 0.25rem;"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <nav class="navbar navbar-expand-lg border-bottom" style="display: none; background: var(--panel); border-color: rgba(255,255,255,.08) !important;" id="mainNav">
 <div class="container-fluid">
 <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#" style="color: var(--text); font-size: 1.25rem;">
@@ -869,6 +854,13 @@
 <div class="col-12 mb-4">
 <div class="row g-4">
 <div class="col-6 col-lg-3">
+<div class="kpi-card" style="background: linear-gradient(135deg, rgba(89, 162, 255, 0.1), rgba(138, 125, 255, 0.05));">
+  <div class="kpi-icon" style="background: linear-gradient(135deg, rgba(89, 162, 255, 0.2), rgba(138, 125, 255, 0.2));">💰</div>
+  <div class="kpi-label">Total Monthly Income</div>
+  <div class="kpi-value" id="kpiMonthlyIncome">—</div>
+</div>
+</div>
+<div class="col-6 col-lg-3">
 <div class="kpi-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.05));">
   <div class="kpi-icon" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.2));">💵</div>
   <div class="kpi-label">Current Savings</div>
@@ -883,6 +875,13 @@
 </div>
 </div>
 <div class="col-6 col-lg-3">
+<div class="kpi-card" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.05));">
+  <div class="kpi-icon" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2));">📈</div>
+  <div class="kpi-label">APY / Inflation</div>
+  <div class="kpi-value"><span id="kpiApy">—</span> / <span id="kpiInflation">—</span></div>
+</div>
+</div>
+<div class="col-6 col-lg-3">
 <div class="kpi-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.05));">
   <div class="kpi-icon" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.2));">🛡️</div>
   <div class="kpi-label">Emergency Fund</div>
@@ -894,21 +893,6 @@
   <div class="kpi-icon" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));">🎯</div>
   <div class="kpi-label">Goals On Track</div>
   <div class="kpi-value" id="kpiGoalsOnTrack">—</div>
-</div>
-</div>
-</div>
-</div>
-<!-- Monthly Contribution Tracker -->
-<div class="col-12 mb-4">
-<div class="card p-3">
-<h5 class="mb-2">📅 Monthly Contribution Tracker</h5>
-<div class="row g-3">
-<div class="col-lg-8">
-<canvas height="120" id="monthlyContributionChart"></canvas>
-</div>
-<div class="col-lg-4">
-<div id="contributionStreak"></div>
-<div class="mt-3" id="contributionTable"></div>
 </div>
 </div>
 </div>
@@ -954,6 +938,20 @@
 <div id="smartInsights"></div>
 </div>
 </div>
+<div class="col-12">
+<div class="card p-3">
+<h5 class="mb-2">📅 Monthly Contribution Tracker</h5>
+<div class="row g-3">
+<div class="col-lg-8">
+<canvas height="120" id="monthlyContributionChart"></canvas>
+</div>
+<div class="col-lg-4">
+<div id="contributionStreak"></div>
+<div class="mt-3" id="contributionTable"></div>
+</div>
+</div>
+</div>
+</div>
 </div>
 </section>
 <!-- People & Incomes -->
@@ -961,7 +959,16 @@
 <!-- Add Person Card -->
 <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(89, 162, 255, 0.1) 0%, rgba(138, 125, 255, 0.1) 100%); border-radius: 16px;">
   <div class="card-body p-4">
-    <div class="d-flex align-items-center justify-content-between mb-3">
+    <div class="d-flex align-items-center mb-3" id="addPersonHeader">
+      <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, var(--brand2), var(--brand)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+        👤
+      </div>
+      <div>
+        <h5 class="mb-0" style="font-weight: 600;">Add New Contributor</h5>
+        <small class="text-muted">Track savings and income for household members</small>
+      </div>
+    </div>
+    <div class="d-flex align-items-center justify-content-between mb-3" id="addPersonHeaderCollapsed" style="display: none;">
       <div class="d-flex align-items-center">
         <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, var(--brand2), var(--brand)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
           👤
@@ -1015,7 +1022,16 @@
 <!-- Add Goal Card -->
 <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border-radius: 16px;">
   <div class="card-body p-4">
-    <div class="d-flex align-items-center justify-content-between mb-3">
+    <div class="d-flex align-items-center mb-3" id="addGoalHeader">
+      <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+        🎯
+      </div>
+      <div>
+        <h5 class="mb-0" style="font-weight: 600;">Add New Goal</h5>
+        <small class="text-muted">Set financial targets and track your progress</small>
+      </div>
+    </div>
+    <div class="d-flex align-items-center justify-content-between mb-3" id="addGoalHeaderCollapsed" style="display: none;">
       <div class="d-flex align-items-center">
         <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
           🎯
@@ -1194,7 +1210,16 @@
 <!-- Add Transaction Card -->
 <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); border-radius: 16px;">
   <div class="card-body p-4">
-    <div class="d-flex align-items-center justify-content-between mb-3">
+    <div class="d-flex align-items-center mb-3" id="addTxHeader">
+      <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+        💳
+      </div>
+      <div>
+        <h5 class="mb-0" style="font-weight: 600;">Add Savings Transaction</h5>
+        <small class="text-muted">Record your savings contributions</small>
+      </div>
+    </div>
+    <div class="d-flex align-items-center justify-content-between mb-3" id="addTxHeaderCollapsed" style="display: none;">
       <div class="d-flex align-items-center">
         <div class="me-3" style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #3b82f6); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
           💳
@@ -1677,39 +1702,6 @@
     });
 
     /********** UTILITY FUNCTIONS **********/
-    // CRUD Loading Popup Functions
-    function showCrudLoading(message, details = '') {
-      const popup = $('#crudLoadingPopup');
-      const messageEl = $('#crudLoadingMessage');
-      const detailsEl = $('#crudLoadingDetails');
-      
-      if (popup && messageEl) {
-        messageEl.textContent = message;
-        if (detailsEl) {
-          detailsEl.textContent = details;
-        }
-        popup.style.display = 'block';
-        
-        // Add fade-in animation
-        popup.style.opacity = '0';
-        popup.style.transition = 'opacity 0.2s ease-in';
-        setTimeout(() => {
-          popup.style.opacity = '1';
-        }, 10);
-      }
-    }
-    
-    function hideCrudLoading() {
-      const popup = $('#crudLoadingPopup');
-      if (popup) {
-        popup.style.opacity = '0';
-        popup.style.transition = 'opacity 0.2s ease-out';
-        setTimeout(() => {
-          popup.style.display = 'none';
-        }, 200);
-      }
-    }
-    
     // Simple alert function for user notifications
     function showAlert(message, type = 'info') {
       // For now, use browser alert. Can be enhanced with a toast notification system later
@@ -1799,9 +1791,13 @@
       $('#toggleAddPerson')?.addEventListener('click', () => {
         const form = $('#addPersonForm');
         const icon = $('#toggleAddPersonIcon');
-        if(form && icon) {
+        const headerExpanded = $('#addPersonHeader');
+        const headerCollapsed = $('#addPersonHeaderCollapsed');
+        if(form && icon && headerExpanded && headerCollapsed) {
           const isVisible = form.style.display !== 'none';
           form.style.display = isVisible ? 'none' : 'block';
+          headerExpanded.style.display = isVisible ? 'none' : 'flex';
+          headerCollapsed.style.display = isVisible ? 'flex' : 'none';
           icon.textContent = isVisible ? '▼' : '▲';
         }
       });
@@ -1810,9 +1806,13 @@
       $('#toggleAddGoal')?.addEventListener('click', () => {
         const form = $('#addGoalForm');
         const icon = $('#toggleAddGoalIcon');
-        if(form && icon) {
+        const headerExpanded = $('#addGoalHeader');
+        const headerCollapsed = $('#addGoalHeaderCollapsed');
+        if(form && icon && headerExpanded && headerCollapsed) {
           const isVisible = form.style.display !== 'none';
           form.style.display = isVisible ? 'none' : 'block';
+          headerExpanded.style.display = isVisible ? 'none' : 'flex';
+          headerCollapsed.style.display = isVisible ? 'flex' : 'none';
           icon.textContent = isVisible ? '▼' : '▲';
         }
       });
@@ -1821,17 +1821,16 @@
       $('#toggleAddTx')?.addEventListener('click', () => {
         const form = $('#addTxForm');
         const icon = $('#toggleAddTxIcon');
-        if(form && icon) {
+        const headerExpanded = $('#addTxHeader');
+        const headerCollapsed = $('#addTxHeaderCollapsed');
+        if(form && icon && headerExpanded && headerCollapsed) {
           const isVisible = form.style.display !== 'none';
           form.style.display = isVisible ? 'none' : 'block';
+          headerExpanded.style.display = isVisible ? 'none' : 'flex';
+          headerCollapsed.style.display = isVisible ? 'flex' : 'none';
           icon.textContent = isVisible ? '▼' : '▲';
         }
       });
-      
-      // Initialize toggle icons to show forms are expanded
-      $('#toggleAddPersonIcon').textContent = '▲';
-      $('#toggleAddGoalIcon').textContent = '▲';
-      $('#toggleAddTxIcon').textContent = '▲';
     }
     
     async function initializeApp() {
@@ -2236,8 +2235,11 @@
       $('#inflation').value = appState.settings.inflationPct;
 
       // KPIs
+      $('#kpiMonthlyIncome').textContent = fmtMoney(householdMonthlyIncome());
       $('#kpiCurrentSavings').textContent = fmtMoney(currentSavingsHousehold());
       $('#kpiSavingsRate').textContent = (appState.settings.currentRatePct||0).toFixed(1) + '%';
+      $('#kpiApy').textContent = (appState.settings.apyPct||0).toFixed(1) + '%';
+      $('#kpiInflation').textContent = (appState.settings.inflationPct||0).toFixed(1) + '%';
       
       // Enhanced KPIs
       renderEnhancedKPIs();
@@ -2393,16 +2395,12 @@
       const inflationPct = Number($('#inflation').value);
       if(currentRatePct<0 || apyPct<0 || inflationPct<0) return showAlert('Invalid negative value', 'warning');
       
-      showCrudLoading('Saving settings...', 'Updating financial parameters');
-      
       try {
         appState.settings = { currency, locale, currentRatePct, apyPct, inflationPct };
         await appApi.updateSettings(appState.settings);
         saveState();
-        hideCrudLoading();
         showAlert('✅ Settings saved successfully!', 'success');
       } catch (error) {
-        hideCrudLoading();
         showAlert('Failed to save settings: ' + error.message, 'danger');
       }
     });
@@ -2494,7 +2492,7 @@
                     <div class="text-muted small mb-1" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Monthly Contribution</div>
                     <div class="fw-bold fs-5" style="color: var(--brand);">${fmtMoney(totalContribution)}</div>
                     <div class="small text-muted mt-1">
-                      ${monthly > 0 ? `<span class="badge bg-primary bg-opacity-20 text-white me-1">📊 Rate-based</span>` : ''}
+                      ${monthly > 0 ? `<span class="badge bg-primary bg-opacity-20 text-white me-1">Rate: ${fmtMoney(monthly)}</span>` : ''}
                       ${fixedContrib > 0 ? `<span class="badge bg-success bg-opacity-20 text-white">Fixed: ${fmtMoney(fixedContrib)}</span>` : ''}
                       ${totalContribution === 0 ? '<span class="text-muted">No contribution set</span>' : ''}
                     </div>
@@ -2515,20 +2513,15 @@
               <!-- Income Section -->
               <div class="border-top pt-4" style="border-color: rgba(255,255,255,.1) !important;">
                 <div class="d-flex align-items-center justify-content-between mb-3">
-                  <div class="d-flex align-items-center gap-2">
-                    <button class="btn btn-sm btn-outline-secondary" data-act="toggleIncome" data-pid="${p.id}" style="border-radius: 8px; padding: 0.25rem 0.5rem;" title="Toggle income visibility">
-                      <span id="incomeToggleIcon-${p.id}">👁️</span>
-                    </button>
-                    <div>
-                      <h6 class="mb-0 fw-semibold">💰 Income Sources</h6>
-                      <small class="text-muted">${hasIncomes ? `${p.incomes.length} source${p.incomes.length !== 1 ? 's' : ''}` : 'No income sources yet'}</small>
-                    </div>
+                  <div>
+                    <h6 class="mb-0 fw-semibold">💰 Income Sources</h6>
+                    <small class="text-muted">${hasIncomes ? `${p.incomes.length} source${p.incomes.length !== 1 ? 's' : ''}` : 'No income sources yet'}</small>
                   </div>
                   <button class="btn btn-sm btn-outline-primary" data-act="addIncome" data-pid="${p.id}" style="border-radius: 8px;">
                     <span style="font-size: 1rem;">+</span> Add Income
                   </button>
                 </div>
-                <div id="${incomeId}" class="income-list" style="display: none;">
+                <div id="${incomeId}" class="income-list">
                   ${hasIncomes ? incomes : `
                     <div class="text-center py-4 text-muted" style="font-size: 0.9rem;">
                       <div class="mb-2" style="font-size: 2rem;">💼</div>
@@ -2544,71 +2537,21 @@
         host.appendChild(col);
       });
 
-      // Bind income toggle buttons
-      $all('#peopleList [data-act="toggleIncome"]').forEach(btn=> {
-        btn.addEventListener('click', ()=>{
-          const pid = btn.dataset.pid;
-          const incomeList = $(`#income-${pid}`);
-          const icon = $(`#incomeToggleIcon-${pid}`);
-          
-          if(incomeList) {
-            const isVisible = incomeList.style.display !== 'none';
-            incomeList.style.display = isVisible ? 'none' : 'block';
-            if(icon) {
-              // When hidden, show eye (click to show). When visible, show eye with slash (click to hide)
-              icon.textContent = isVisible ? '🙈' : '👁️';
-            }
-          }
-        });
-      });
-      
       // Bind changes
       $all('#peopleList [data-ptype]').forEach(el=>{
         el.addEventListener('change', async e=>{
           const pid = e.target.dataset.pid;
           const type = e.target.dataset.ptype;
           const p = findPersonById(pid); if(!p) return;
-          
-          let updateMessage = '';
-          if(type==='name') { 
-            p.name = e.target.value.trim()||'Person';
-            updateMessage = `Updating ${p.name}'s name...`;
-          }
-          if(type==='savings'){ 
-            const v=Number(e.target.value); 
-            if(!isFinite(v)||v<0) return showAlert('Invalid savings amount', 'warning'); 
-            p.currentSavings=v;
-            updateMessage = `Updating ${p.name}'s savings...`;
-          }
-          if(type==='fixedContrib'){ 
-            const v=Number(e.target.value); 
-            if(!isFinite(v)||v<0) return showAlert('Invalid fixed contribution', 'warning'); 
-            p.fixedMonthlyContribution=v;
-            updateMessage = `Updating ${p.name}'s contribution...`;
-          }
+          if(type==='name') { p.name = e.target.value.trim()||'Person'; }
+          if(type==='savings'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return showAlert('Invalid savings amount', 'warning'); p.currentSavings=v; }
+          if(type==='fixedContrib'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return showAlert('Invalid fixed contribution', 'warning'); p.fixedMonthlyContribution=v; }
           if(type==='incomeLabel' || type==='incomeAmount' || type==='incomeFreq'){
             const inc = p.incomes.find(i=> i.id===e.target.dataset.iid); if(!inc) return;
-            if(type==='incomeLabel') {
-              inc.label = e.target.value.trim()||'Income';
-              updateMessage = `Updating income source...`;
-            }
-            if(type==='incomeAmount'){ 
-              const v=Number(e.target.value); 
-              if(!isFinite(v)||v<0) return showAlert('Invalid income amount', 'warning'); 
-              inc.amount=v;
-              updateMessage = `Updating income amount...`;
-            }
-            if(type==='incomeFreq'){ 
-              const v=(e.target.value||'monthly').toLowerCase(); 
-              inc.frequency = ['monthly','yearly','annual','annually'].includes(v)? v : 'monthly';
-              updateMessage = `Updating income frequency...`;
-            }
+            if(type==='incomeLabel') inc.label = e.target.value.trim()||'Income';
+            if(type==='incomeAmount'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return showAlert('Invalid income amount', 'warning'); inc.amount=v; }
+            if(type==='incomeFreq'){ const v=(e.target.value||'monthly').toLowerCase(); inc.frequency = ['monthly','yearly','annual','annually'].includes(v)? v : 'monthly'; }
           }
-          
-          if(updateMessage) {
-            showCrudLoading(updateMessage);
-          }
-          
           // Save to backend
           try {
             // Ensure incomes array exists and is properly formatted
@@ -2628,9 +2571,7 @@
             console.log('Updating person:', personData);
             await appApi.updatePerson(personData);
             saveState();
-            hideCrudLoading();
           } catch (error) {
-            hideCrudLoading();
             console.error('Error updating person:', error);
             showAlert('Failed to save changes: ' + (error.message || 'Unknown error'), 'danger');
             // Don't update UI state if save failed
@@ -2713,7 +2654,6 @@
         if(!confirm('Delete person and their incomes?')) return;
         const pid = btn.dataset.pid;
         const name = (appState.people.find(x=>x.id===pid)||{}).name;
-        showCrudLoading('Deleting person...', `Removing ${name} and their data`);
         try {
           await appApi.deletePerson(pid);
           appState.people = appState.people.filter(x=> x.id!==pid);
@@ -2721,10 +2661,7 @@
           appState.goals = appState.goals.map(g => g.owner===name ? {...g, owner:'Household'} : g);
           appState.transactions = appState.transactions.map(t => t.person===name ? {...t, person:'(Removed)'} : t);
           saveState();
-          hideCrudLoading();
-          renderPeople();
         } catch (error) {
-          hideCrudLoading();
           showAlert('Failed to delete person: ' + error.message, 'danger');
         }
       }));
@@ -2742,8 +2679,6 @@
         return;
       }
       
-      showCrudLoading('Adding person...', `Creating ${name} with ${fmtMoney(sav)} savings`);
-      
       try {
         const newPerson = {
           id: uid(),
@@ -2760,12 +2695,9 @@
         $('#personSavings').value=''; 
         $('#personFixedContribution').value='';
         
-        hideCrudLoading();
         showAlert(`${name} added successfully!`, 'success');
         saveState();
-        renderPeople();
       } catch (error) {
-        hideCrudLoading();
         showAlert('Failed to add person: ' + error.message, 'danger');
       }
     });
@@ -2995,62 +2927,29 @@
         el.addEventListener('change', async e=>{
           const gid=e.target.dataset.gid; const k=e.target.dataset.gbind;
           const g=appState.goals.find(x=>x.id===gid); if(!g) return;
-          
-          let updateMessage = '';
-          if(k==='name') {
-            g.name=e.target.value.trim()||'Goal';
-            updateMessage = `Updating goal name...`;
-          }
-          if(k==='target'){ 
-            const v=Number(e.target.value); 
-            if(!isFinite(v)||v<=0) return showAlert('Invalid target amount', 'warning'); 
-            g.target=v;
-            updateMessage = `Updating goal target...`;
-          }
-          if(k==='deadline'){ 
-            if(!e.target.value) return showAlert('Invalid deadline', 'warning'); 
-            g.deadline=e.target.value;
-            updateMessage = `Updating goal deadline...`;
-          }
-          if(k==='owner') {
-            g.owner=e.target.value;
-            updateMessage = `Updating goal owner...`;
-          }
-          if(k==='priority'){ 
-            const v=Math.max(1, Math.floor(Number(e.target.value||1))); 
-            g.priority=v;
-            updateMessage = `Updating goal priority...`;
-          }
-          
-          if(updateMessage) {
-            showCrudLoading(updateMessage);
-          }
-          
+          if(k==='name') g.name=e.target.value.trim()||'Goal';
+          if(k==='target'){ const v=Number(e.target.value); if(!isFinite(v)||v<=0) return showAlert('Invalid target amount', 'warning'); g.target=v; }
+          if(k==='deadline'){ if(!e.target.value) return showAlert('Invalid deadline', 'warning'); g.deadline=e.target.value; }
+          if(k==='owner') g.owner=e.target.value;
+          if(k==='priority'){ const v=Math.max(1, Math.floor(Number(e.target.value||1))); g.priority=v; }
           // Save to backend
           try {
             await appApi.updateGoal(g);
             saveState();
-            hideCrudLoading();
           } catch (error) {
             console.error('Error updating goal:', error);
-            hideCrudLoading();
             saveState(); // Still update UI
           }
         });
       });
       $all('#goalsList [data-act="delGoal"]').forEach(btn=> btn.addEventListener('click', async ()=>{
         const gid = btn.dataset.gid;
-        const goalName = appState.goals.find(g => g.id === gid)?.name || '';
-        if (!confirm(`Delete goal "${goalName}"?`)) return;
-        showCrudLoading('Deleting goal...', `Removing ${goalName}`);
+        if (!confirm(`Delete goal "${appState.goals.find(g => g.id === gid)?.name || ''}"?`)) return;
         try {
           await appApi.deleteGoal(gid);
           appState.goals = appState.goals.filter(x=> x.id!==gid);
           saveState();
-          hideCrudLoading();
-          renderGoals();
         } catch (error) {
-          hideCrudLoading();
           showAlert('Failed to delete goal: ' + error.message, 'danger');
         }
       }));
@@ -3096,8 +2995,6 @@
       const owner=$('#goalOwner').value||'Household';
       const priority=Math.max(1, Math.floor(Number($('#goalPriority').value||1)));
       
-      showCrudLoading('Creating goal...', `Setting up ${name} with target ${fmtMoney(target)}`);
-      
       try {
         const newGoal = { id:uid(), name, target, deadline, owner, priority };
         await appApi.createGoal(newGoal);
@@ -3108,12 +3005,9 @@
         $('#goalDeadline').value=''; 
         $('#goalPriority').value='1';
         
-        hideCrudLoading();
         showAlert(`${name} goal created successfully!`, 'success');
         saveState();
-        renderGoals();
       } catch (error) {
-        hideCrudLoading();
         showAlert('Failed to add goal: ' + error.message, 'danger');
       }
     });
@@ -3353,9 +3247,6 @@
       const note = ($('#txNote').value||'').trim();
       const goalId = $('#txGoal').value || null;
       
-      // Show loading popup
-      showCrudLoading('Adding transaction...', `Saving ${fmtMoney(amt)} for ${person}`);
-      
       // Show loading state
       const originalText = btn.innerHTML;
       btn.disabled = true;
@@ -3401,17 +3292,13 @@
         }
         
         // Run API calls in parallel, handle errors silently (UI already updated)
-        Promise.all(savePromises).then(() => {
-          hideCrudLoading();
-        }).catch(error => {
+        Promise.all(savePromises).catch(error => {
           console.error('Error saving transaction to backend:', error);
-          hideCrudLoading();
           // Optionally show a subtle warning that sync failed
           showAlert('Transaction added locally, but sync failed. Please refresh.', 'warning');
         });
       } catch (error) {
         // Rollback optimistic update on error
-        hideCrudLoading();
         appState.transactions.shift();
         if(p) {
           p.currentSavings = (p.currentSavings || 0) - amt;
@@ -3460,47 +3347,14 @@
       // table
       tableBody.innerHTML='';
       
-      // Assign colors to goals
-      const goalColors = [
-        { bg: 'rgba(59, 130, 246, 0.2)', text: '#3b82f6' }, // Blue
-        { bg: 'rgba(16, 185, 129, 0.2)', text: '#10b981' }, // Green
-        { bg: 'rgba(139, 92, 246, 0.2)', text: '#8b5cf6' }, // Purple
-        { bg: 'rgba(245, 158, 11, 0.2)', text: '#f59e0b' }, // Orange
-        { bg: 'rgba(236, 72, 153, 0.2)', text: '#ec4899' }, // Pink
-        { bg: 'rgba(6, 182, 212, 0.2)', text: '#06b6d4' }, // Cyan
-        { bg: 'rgba(239, 68, 68, 0.2)', text: '#ef4444' }, // Red
-        { bg: 'rgba(34, 197, 94, 0.2)', text: '#22c55e' }, // Emerald
-      ];
-      const goalColorMap = new Map();
-      appState.goals.forEach((goal, idx) => {
-        goalColorMap.set(goal.id, goalColors[idx % goalColors.length]);
-      });
-      
-      // Calculate running balances PER GOAL: sort by date ascending, then by ID
-      const sortedByDateAsc = appState.transactions.slice().sort((a,b)=> {
-        const dateCompare = a.date.localeCompare(b.date);
-        if (dateCompare !== 0) return dateCompare;
-        return a.id.localeCompare(b.id);
-      });
-      
-      // Group transactions by goal and calculate running balance for each
+      // Calculate running balances: sort by date ascending, calculate cumulative sum
+      const sortedByDateAsc = appState.transactions.slice().sort((a,b)=> a.date.localeCompare(b.date));
       const balanceMap = new Map();
-      const goalBalances = new Map(); // Track running balance per goal
+      let runningBalance = 0;
       
       sortedByDateAsc.forEach(t => {
-        const amount = Number(t.amount) || 0;
-        if (!isFinite(amount) || amount < 0) {
-          console.warn('⚠️ Invalid transaction amount:', t);
-        }
-        
-        // Get goal key (goalId or 'general')
-        const goalKey = t.goalId || 'general';
-        const currentGoalBalance = goalBalances.get(goalKey) || 0;
-        const newGoalBalance = currentGoalBalance + amount;
-        goalBalances.set(goalKey, newGoalBalance);
-        
-        // Store balance for this transaction
-        balanceMap.set(t.id, newGoalBalance);
+        runningBalance += Number(t.amount || 0);
+        balanceMap.set(t.id, runningBalance);
       });
       
       // Display transactions sorted by date descending (newest first)
@@ -3511,8 +3365,20 @@
         
         let goalDisplay = '';
         if (goal) {
-          const color = goalColorMap.get(goal.id) || goalColors[0];
-          goalDisplay = `<span class="badge text-white" style="background-color: ${color.bg}; border: 1px solid ${color.text}40;">${goal.name}</span>`;
+          // Calculate goal balance
+          const allocated = goalAllocatedSavings(goal.id);
+          const unallocated = ownerUnallocatedSavings(goal.owner);
+          const current = allocated + unallocated;
+          const progress = Math.min(100, (current / goal.target) * 100);
+          
+          goalDisplay = `
+            <div class="d-flex flex-column gap-1">
+              <span class="badge bg-primary bg-opacity-20 text-white">${goal.name}</span>
+              <small class="text-muted" style="font-size: 0.75rem;">
+                ${fmtMoney(current)} / ${fmtMoney(goal.target)} (${progress.toFixed(0)}%)
+              </small>
+            </div>
+          `;
         } else {
           goalDisplay = '<span class="badge text-white" style="background-color: rgba(255, 255, 255, 0.15);">General</span>';
         }
@@ -3537,8 +3403,6 @@
         const tx = appState.transactions.find(x=> x.id===btn.dataset.delTx);
         if(!confirm(`Delete transaction of ${fmtMoney(tx?.amount || 0)} on ${tx?.date || ''}?`)) return;
         
-        showCrudLoading('Deleting transaction...', `Removing ${fmtMoney(tx?.amount || 0)} from ${tx?.person || ''}`);
-        
         if(tx) {
           const p = appState.people.find(x => x.name === tx.person);
           if(p) {
@@ -3555,11 +3419,7 @@
           await appApi.deleteTransaction(btn.dataset.delTx);
           appState.transactions = appState.transactions.filter(x=> x.id!==btn.dataset.delTx); 
           saveState();
-          hideCrudLoading();
-          renderTransactions();
-          buildTxCharts();
         } catch (error) {
-          hideCrudLoading();
           showAlert('Failed to delete transaction: ' + error.message, 'danger');
         }
       }));
@@ -3641,8 +3501,6 @@
             return;
           }
           
-          showCrudLoading('Updating transaction...', `Saving changes to ${fmtMoney(newAmount)} transaction`);
-          
           // Update person's savings (remove old amount, add new amount)
           const oldPerson = appState.people.find(p => p.name === tx.person);
           const newPersonObj = appState.people.find(p => p.name === newPerson);
@@ -3714,11 +3572,8 @@
           }
           
           // Run API calls in parallel
-          Promise.all(savePromises).then(() => {
-            hideCrudLoading();
-          }).catch(error => {
+          Promise.all(savePromises).catch(error => {
             console.error('Error saving transaction edit to backend:', error);
-            hideCrudLoading();
             // Rollback local changes
             Object.assign(tx, originalTx);
             if(originalOldPerson) Object.assign(oldPerson, originalOldPerson);
