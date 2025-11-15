@@ -2386,12 +2386,16 @@
       const inflationPct = Number($('#inflation').value);
       if(currentRatePct<0 || apyPct<0 || inflationPct<0) return showAlert('Invalid negative value', 'warning');
       
+      showCrudLoading('Saving settings...', 'Updating financial parameters');
+      
       try {
         appState.settings = { currency, locale, currentRatePct, apyPct, inflationPct };
         await appApi.updateSettings(appState.settings);
         saveState();
+        hideCrudLoading();
         showAlert('✅ Settings saved successfully!', 'success');
       } catch (error) {
+        hideCrudLoading();
         showAlert('Failed to save settings: ' + error.message, 'danger');
       }
     });
@@ -2567,6 +2571,18 @@
             if(type==='incomeFreq'){ const v=(e.target.value||'monthly').toLowerCase(); inc.frequency = ['monthly','yearly','annual','annually'].includes(v)? v : 'monthly'; }
           }
           // Save to backend
+          let updateMessage = '';
+          if(type==='name') updateMessage = `Updating ${p.name}'s name...`;
+          if(type==='savings') updateMessage = `Updating ${p.name}'s savings...`;
+          if(type==='fixedContrib') updateMessage = `Updating ${p.name}'s contribution...`;
+          if(type==='incomeLabel') updateMessage = `Updating income source...`;
+          if(type==='incomeAmount') updateMessage = `Updating income amount...`;
+          if(type==='incomeFreq') updateMessage = `Updating income frequency...`;
+          
+          if(updateMessage) {
+            showCrudLoading(updateMessage);
+          }
+          
           try {
             // Ensure incomes array exists and is properly formatted
             if (!p.incomes) p.incomes = [];
@@ -2585,7 +2601,9 @@
             console.log('Updating person:', personData);
             await appApi.updatePerson(personData);
             saveState();
+            hideCrudLoading();
           } catch (error) {
+            hideCrudLoading();
             console.error('Error updating person:', error);
             showAlert('Failed to save changes: ' + (error.message || 'Unknown error'), 'danger');
             // Don't update UI state if save failed
@@ -2668,6 +2686,7 @@
         if(!confirm('Delete person and their incomes?')) return;
         const pid = btn.dataset.pid;
         const name = (appState.people.find(x=>x.id===pid)||{}).name;
+        showCrudLoading('Deleting person...', `Removing ${name} and their data`);
         try {
           await appApi.deletePerson(pid);
           appState.people = appState.people.filter(x=> x.id!==pid);
@@ -2675,7 +2694,10 @@
           appState.goals = appState.goals.map(g => g.owner===name ? {...g, owner:'Household'} : g);
           appState.transactions = appState.transactions.map(t => t.person===name ? {...t, person:'(Removed)'} : t);
           saveState();
+          hideCrudLoading();
+          renderPeople();
         } catch (error) {
+          hideCrudLoading();
           showAlert('Failed to delete person: ' + error.message, 'danger');
         }
       }));
@@ -2693,6 +2715,8 @@
         return;
       }
       
+      showCrudLoading('Adding person...', `Creating ${name} with ${fmtMoney(sav)} savings`);
+      
       try {
         const newPerson = {
           id: uid(),
@@ -2709,9 +2733,12 @@
         $('#personSavings').value=''; 
         $('#personFixedContribution').value='';
         
+        hideCrudLoading();
         showAlert(`${name} added successfully!`, 'success');
         saveState();
+        renderPeople();
       } catch (error) {
+        hideCrudLoading();
         showAlert('Failed to add person: ' + error.message, 'danger');
       }
     });
@@ -2941,16 +2968,43 @@
         el.addEventListener('change', async e=>{
           const gid=e.target.dataset.gid; const k=e.target.dataset.gbind;
           const g=appState.goals.find(x=>x.id===gid); if(!g) return;
-          if(k==='name') g.name=e.target.value.trim()||'Goal';
-          if(k==='target'){ const v=Number(e.target.value); if(!isFinite(v)||v<=0) return showAlert('Invalid target amount', 'warning'); g.target=v; }
-          if(k==='deadline'){ if(!e.target.value) return showAlert('Invalid deadline', 'warning'); g.deadline=e.target.value; }
-          if(k==='owner') g.owner=e.target.value;
-          if(k==='priority'){ const v=Math.max(1, Math.floor(Number(e.target.value||1))); g.priority=v; }
+          let updateMessage = '';
+          if(k==='name') {
+            g.name=e.target.value.trim()||'Goal';
+            updateMessage = `Updating goal name...`;
+          }
+          if(k==='target'){ 
+            const v=Number(e.target.value); 
+            if(!isFinite(v)||v<=0) return showAlert('Invalid target amount', 'warning'); 
+            g.target=v;
+            updateMessage = `Updating goal target...`;
+          }
+          if(k==='deadline'){ 
+            if(!e.target.value) return showAlert('Invalid deadline', 'warning'); 
+            g.deadline=e.target.value;
+            updateMessage = `Updating goal deadline...`;
+          }
+          if(k==='owner') {
+            g.owner=e.target.value;
+            updateMessage = `Updating goal owner...`;
+          }
+          if(k==='priority'){ 
+            const v=Math.max(1, Math.floor(Number(e.target.value||1))); 
+            g.priority=v;
+            updateMessage = `Updating goal priority...`;
+          }
+          
+          if(updateMessage) {
+            showCrudLoading(updateMessage);
+          }
+          
           // Save to backend
           try {
             await appApi.updateGoal(g);
             saveState();
+            hideCrudLoading();
           } catch (error) {
+            hideCrudLoading();
             console.error('Error updating goal:', error);
             saveState(); // Still update UI
           }
@@ -2958,12 +3012,17 @@
       });
       $all('#goalsList [data-act="delGoal"]').forEach(btn=> btn.addEventListener('click', async ()=>{
         const gid = btn.dataset.gid;
-        if (!confirm(`Delete goal "${appState.goals.find(g => g.id === gid)?.name || ''}"?`)) return;
+        const goalName = appState.goals.find(g => g.id === gid)?.name || '';
+        if (!confirm(`Delete goal "${goalName}"?`)) return;
+        showCrudLoading('Deleting goal...', `Removing ${goalName}`);
         try {
           await appApi.deleteGoal(gid);
           appState.goals = appState.goals.filter(x=> x.id!==gid);
           saveState();
+          hideCrudLoading();
+          renderGoals();
         } catch (error) {
+          hideCrudLoading();
           showAlert('Failed to delete goal: ' + error.message, 'danger');
         }
       }));
@@ -3009,6 +3068,8 @@
       const owner=$('#goalOwner').value||'Household';
       const priority=Math.max(1, Math.floor(Number($('#goalPriority').value||1)));
       
+      showCrudLoading('Creating goal...', `Setting up ${name} with target ${fmtMoney(target)}`);
+      
       try {
         const newGoal = { id:uid(), name, target, deadline, owner, priority };
         await appApi.createGoal(newGoal);
@@ -3019,9 +3080,12 @@
         $('#goalDeadline').value=''; 
         $('#goalPriority').value='1';
         
+        hideCrudLoading();
         showAlert(`${name} goal created successfully!`, 'success');
         saveState();
+        renderGoals();
       } catch (error) {
+        hideCrudLoading();
         showAlert('Failed to add goal: ' + error.message, 'danger');
       }
     });
@@ -3261,6 +3325,9 @@
       const note = ($('#txNote').value||'').trim();
       const goalId = $('#txGoal').value || null;
       
+      // Show loading popup
+      showCrudLoading('Adding transaction...', `Saving ${fmtMoney(amt)} for ${person}`);
+      
       // Show loading state
       const originalText = btn.innerHTML;
       btn.disabled = true;
@@ -3306,13 +3373,17 @@
         }
         
         // Run API calls in parallel, handle errors silently (UI already updated)
-        Promise.all(savePromises).catch(error => {
+        Promise.all(savePromises).then(() => {
+          hideCrudLoading();
+        }).catch(error => {
           console.error('Error saving transaction to backend:', error);
+          hideCrudLoading();
           // Optionally show a subtle warning that sync failed
           showAlert('Transaction added locally, but sync failed. Please refresh.', 'warning');
         });
       } catch (error) {
         // Rollback optimistic update on error
+        hideCrudLoading();
         appState.transactions.shift();
         if(p) {
           p.currentSavings = (p.currentSavings || 0) - amt;
@@ -3430,6 +3501,8 @@
         const tx = appState.transactions.find(x=> x.id===btn.dataset.delTx);
         if(!confirm(`Delete transaction of ${fmtMoney(tx?.amount || 0)} on ${tx?.date || ''}?`)) return;
         
+        showCrudLoading('Deleting transaction...', `Removing ${fmtMoney(tx?.amount || 0)} from ${tx?.person || ''}`);
+        
         if(tx) {
           const p = appState.people.find(x => x.name === tx.person);
           if(p) {
@@ -3446,7 +3519,11 @@
           await appApi.deleteTransaction(btn.dataset.delTx);
           appState.transactions = appState.transactions.filter(x=> x.id!==btn.dataset.delTx); 
           saveState();
+          hideCrudLoading();
+          renderTransactions();
+          buildTxCharts();
         } catch (error) {
+          hideCrudLoading();
           showAlert('Failed to delete transaction: ' + error.message, 'danger');
         }
       }));
@@ -3528,6 +3605,8 @@
             return;
           }
           
+          showCrudLoading('Updating transaction...', `Saving changes to ${fmtMoney(newAmount)} transaction`);
+          
           // Update person's savings (remove old amount, add new amount)
           const oldPerson = appState.people.find(p => p.name === tx.person);
           const newPersonObj = appState.people.find(p => p.name === newPerson);
@@ -3599,8 +3678,11 @@
           }
           
           // Run API calls in parallel
-          Promise.all(savePromises).catch(error => {
+          Promise.all(savePromises).then(() => {
+            hideCrudLoading();
+          }).catch(error => {
             console.error('Error saving transaction edit to backend:', error);
+            hideCrudLoading();
             // Rollback local changes
             Object.assign(tx, originalTx);
             if(originalOldPerson) Object.assign(oldPerson, originalOldPerson);
