@@ -908,6 +908,7 @@
 </div>
 <div class="col-lg-4">
 <div id="contributionStreak"></div>
+<div class="mt-3" id="contributionTable"></div>
 </div>
 </div>
 </div>
@@ -4146,7 +4147,10 @@
         </div>
       `;
       
-      $('#contributionTable').innerHTML = tableHtml;
+      const contributionTableEl = $('#contributionTable');
+      if (contributionTableEl) {
+        contributionTableEl.innerHTML = tableHtml;
+      }
     }
     
     function buildTxCharts(){
