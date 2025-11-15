@@ -975,7 +975,7 @@
         <span id="toggleAddPersonIcon">▼</span>
       </button>
     </div>
-    <div class="row g-3 mt-2" id="addPersonForm" style="display: none;">
+    <div class="row g-3 mt-2 align-items-end" id="addPersonForm" style="display: none;">
       <div class="col-md-3">
         <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Name</label>
         <input class="form-control form-control-lg" id="personName" placeholder="e.g., Michael" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
@@ -989,7 +989,8 @@
         <input class="form-control form-control-lg" id="personFixedContribution" placeholder="0" step="0.01" type="number" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
         <small class="text-muted" style="font-size: 0.7rem;">Fixed amount regardless of rate</small>
       </div>
-      <div class="col-md-3 d-flex align-items-end">
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem; opacity: 0;">Placeholder</label>
         <button class="btn btn-primary w-100" id="addPersonBtn" style="border-radius: 10px; padding: 0.75rem; font-weight: 600; box-shadow: 0 4px 12px rgba(89, 162, 255, 0.3);">
           <span style="font-size: 1.2rem; margin-right: 0.25rem;">+</span> Add
         </button>
@@ -1029,7 +1030,7 @@
         <span id="toggleAddGoalIcon">▼</span>
       </button>
     </div>
-    <div class="row g-3 mt-2" id="addGoalForm" style="display: none;">
+    <div class="row g-3 mt-2 align-items-end" id="addGoalForm" style="display: none;">
       <div class="col-md-2">
         <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Goal Name</label>
         <input class="form-control form-control-lg" id="goalName" placeholder="Emergency Fund" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
@@ -1051,7 +1052,8 @@
         <input class="form-control form-control-lg" id="goalPriority" min="1" type="number" value="1" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
         <small class="text-muted" style="font-size: 0.7rem;">Lower = Higher priority</small>
       </div>
-      <div class="col-md-2 d-flex align-items-end">
+      <div class="col-md-2">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem; opacity: 0;">Placeholder</label>
         <button class="btn btn-primary w-100" id="addGoalBtn" style="border-radius: 10px; padding: 0.75rem; font-weight: 600; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
           <span style="font-size: 1.2rem; margin-right: 0.25rem;">+</span> Add
         </button>
@@ -1208,7 +1210,7 @@
         <span id="toggleAddTxIcon">▼</span>
       </button>
     </div>
-    <div class="row g-3 mt-2" id="addTxForm" style="display: none;">
+    <div class="row g-3 mt-2 align-items-end" id="addTxForm" style="display: none;">
       <div class="col-md-2">
         <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Date</label>
         <input class="form-control form-control-lg" id="txDate" type="date" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
@@ -1234,7 +1236,8 @@
         <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Note (Optional)</label>
         <input class="form-control form-control-lg" id="txNote" placeholder="e.g., Payday auto-save, Bonus, etc." style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
       </div>
-      <div class="col-md-2 d-flex align-items-end">
+      <div class="col-md-2">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem; opacity: 0;">Placeholder</label>
         <button class="btn btn-primary w-100" id="addTxBtn" style="border-radius: 10px; padding: 0.75rem; font-weight: 600; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
           <span style="font-size: 1.2rem; margin-right: 0.25rem;">+</span> Add
         </button>
