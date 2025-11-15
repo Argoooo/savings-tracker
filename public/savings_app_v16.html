@@ -4092,7 +4092,10 @@
         `).join('')}
       `;
       
-      $('#contributionStreak').innerHTML = streakHtml;
+      const contributionStreakEl = $('#contributionStreak');
+      if (contributionStreakEl) {
+        contributionStreakEl.innerHTML = streakHtml;
+      }
     }
     
     function updateContributionTable() {
