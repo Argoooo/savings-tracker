@@ -3254,15 +3254,34 @@
       // table
       tableBody.innerHTML='';
       
-      // Calculate running balances: sort by date ascending, calculate cumulative sum
-      const sortedByDateAsc = appState.transactions.slice().sort((a,b)=> a.date.localeCompare(b.date));
+      // Calculate running balances: sort by date ascending, then by ID for consistent ordering
+      const sortedByDateAsc = appState.transactions.slice().sort((a,b)=> {
+        const dateCompare = a.date.localeCompare(b.date);
+        if (dateCompare !== 0) return dateCompare;
+        // If same date, sort by ID for consistent ordering
+        return a.id.localeCompare(b.id);
+      });
       const balanceMap = new Map();
       let runningBalance = 0;
       
       sortedByDateAsc.forEach(t => {
-        runningBalance += Number(t.amount || 0);
+        const amount = Number(t.amount) || 0;
+        if (!isFinite(amount) || amount < 0) {
+          console.warn('⚠️ Invalid transaction amount:', t);
+        }
+        runningBalance += amount;
         balanceMap.set(t.id, runningBalance);
       });
+      
+      // Verify: The final balance should equal the total of all transactions
+      const totalFromTransactions = txTotal();
+      if (Math.abs(runningBalance - totalFromTransactions) > 0.01) {
+        console.warn('⚠️ Balance calculation mismatch:', {
+          calculatedBalance: runningBalance,
+          totalFromTransactions: totalFromTransactions,
+          difference: runningBalance - totalFromTransactions
+        });
+      }
       
       // Display transactions sorted by date descending (newest first)
       appState.transactions.slice().sort((a,b)=> b.date.localeCompare(a.date)).forEach(t=>{
