@@ -975,7 +975,7 @@
         <span id="toggleAddPersonIcon">▼</span>
       </button>
     </div>
-    <div class="row g-3 mt-2" id="addPersonForm" style="display: none;">
+    <div class="row g-3 mt-2" id="addPersonForm">
       <div class="col-md-4">
         <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Name</label>
         <input class="form-control form-control-lg" id="personName" placeholder="e.g., Michael" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
@@ -1029,7 +1029,7 @@
         <span id="toggleAddGoalIcon">▼</span>
       </button>
     </div>
-    <div class="row g-3 mt-2" id="addGoalForm" style="display: none;">
+    <div class="row g-3 mt-2" id="addGoalForm">
       <div class="col-md-3">
         <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Goal Name</label>
         <input class="form-control form-control-lg" id="goalName" placeholder="Emergency Fund" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
@@ -1208,7 +1208,7 @@
         <span id="toggleAddTxIcon">▼</span>
       </button>
     </div>
-    <div class="row g-3 mt-2" id="addTxForm" style="display: none;">
+    <div class="row g-3 mt-2" id="addTxForm">
       <div class="col-md-3">
         <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Date</label>
         <input class="form-control form-control-lg" id="txDate" type="date" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
@@ -1827,6 +1827,11 @@
           icon.textContent = isVisible ? '▼' : '▲';
         }
       });
+      
+      // Initialize toggle icons to show forms are expanded
+      $('#toggleAddPersonIcon').textContent = '▲';
+      $('#toggleAddGoalIcon').textContent = '▲';
+      $('#toggleAddTxIcon').textContent = '▲';
     }
     
     async function initializeApp() {
