@@ -1800,9 +1800,14 @@
         const form = $('#addPersonForm');
         const icon = $('#toggleAddPersonIcon');
         if(form && icon) {
-          const isVisible = form.style.display !== 'none';
-          form.style.display = isVisible ? 'none' : 'block';
-          icon.textContent = isVisible ? '▼' : '▲';
+          const isVisible = form.style.display !== 'none' && form.style.display !== '';
+          if (isVisible) {
+            form.style.display = 'none';
+            icon.textContent = '▼';
+          } else {
+            form.style.display = '';
+            icon.textContent = '▲';
+          }
         }
       });
       
@@ -1811,9 +1816,14 @@
         const form = $('#addGoalForm');
         const icon = $('#toggleAddGoalIcon');
         if(form && icon) {
-          const isVisible = form.style.display !== 'none';
-          form.style.display = isVisible ? 'none' : 'block';
-          icon.textContent = isVisible ? '▼' : '▲';
+          const isVisible = form.style.display !== 'none' && form.style.display !== '';
+          if (isVisible) {
+            form.style.display = 'none';
+            icon.textContent = '▼';
+          } else {
+            form.style.display = '';
+            icon.textContent = '▲';
+          }
         }
       });
       
@@ -1822,9 +1832,14 @@
         const form = $('#addTxForm');
         const icon = $('#toggleAddTxIcon');
         if(form && icon) {
-          const isVisible = form.style.display !== 'none';
-          form.style.display = isVisible ? 'none' : 'block';
-          icon.textContent = isVisible ? '▼' : '▲';
+          const isVisible = form.style.display !== 'none' && form.style.display !== '';
+          if (isVisible) {
+            form.style.display = 'none';
+            icon.textContent = '▼';
+          } else {
+            form.style.display = '';
+            icon.textContent = '▲';
+          }
         }
       });
     }
