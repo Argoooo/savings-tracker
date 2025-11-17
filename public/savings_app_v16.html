@@ -43,8 +43,8 @@
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <!-- Bootstrap 5.3 -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
-<!-- Flatpickr CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Litepicker CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <!-- Supabase -->
@@ -1397,8 +1397,8 @@
 </main>
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Flatpickr JS -->
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<!-- Litepicker JS -->
+<script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
 <!-- Auth & API Scripts -->
 <script>
     // ⚠️ CRITICAL: Run immediately when page loads
@@ -1800,52 +1800,50 @@
     let appState = JSON.parse(JSON.stringify(defaultState));
 
     // Initialize app with authentication
-    // Initialize Flatpickr date pickers with Today button
+    // Initialize Litepicker date pickers with Today button
     function initializeDatePickers() {
-      // Common flatpickr options with Today button
-      const flatpickrOptions = {
-        dateFormat: 'Y-m-d',
-        allowInput: true,
-        clickOpens: true,
-        plugins: [
-          function() {
-            return {
-              onReady: function(selectedDates, dateStr, instance) {
-                // Add Today button
-                const todayBtn = document.createElement('button');
-                todayBtn.className = 'flatpickr-today-button';
-                todayBtn.type = 'button';
-                todayBtn.textContent = 'Today';
-                todayBtn.style.cssText = 'margin-left: 8px; padding: 4px 12px; background: #59a2ff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;';
-                todayBtn.addEventListener('click', function() {
-                  instance.setDate(new Date(), false);
-                  instance.close();
-                });
-                
-                // Find the calendar container and add button
-                const calendarContainer = instance.calendarContainer;
-                if (calendarContainer) {
-                  const monthNav = calendarContainer.querySelector('.flatpickr-month');
-                  if (monthNav && !monthNav.querySelector('.flatpickr-today-button')) {
-                    monthNav.appendChild(todayBtn);
-                  }
-                }
-              }
-            };
-          }
-        ]
+      // Common Litepicker options with Today button
+      const litepickerOptions = {
+        format: 'YYYY-MM-DD',
+        singleMode: true,
+        showTooltip: true,
+        tooltipText: {
+          one: 'day',
+          other: 'days'
+        },
+        buttonText: {
+          apply: 'Select',
+          cancel: 'Cancel',
+          previousMonth: '‹',
+          nextMonth: '›',
+          today: 'Today',
+          clear: 'Clear'
+        },
+        autoApply: true,
+        dropdowns: {
+          minYear: 2020,
+          maxYear: 2030,
+          months: true,
+          years: true
+        }
       };
       
       // Initialize on transaction date input
       const txDateInput = document.getElementById('txDate');
-      if (txDateInput && !txDateInput._flatpickr) {
-        flatpickr(txDateInput, flatpickrOptions);
+      if (txDateInput && !txDateInput._litepicker) {
+        txDateInput._litepicker = new Litepicker({
+          element: txDateInput,
+          ...litepickerOptions
+        });
       }
       
       // Initialize on goal deadline input
       const goalDeadlineInput = document.getElementById('goalDeadline');
-      if (goalDeadlineInput && !goalDeadlineInput._flatpickr) {
-        flatpickr(goalDeadlineInput, flatpickrOptions);
+      if (goalDeadlineInput && !goalDeadlineInput._litepicker) {
+        goalDeadlineInput._litepicker = new Litepicker({
+          element: goalDeadlineInput,
+          ...litepickerOptions
+        });
       }
       
       // Initialize on edit transaction date input (will be initialized when modal opens)
@@ -3131,39 +3129,28 @@
         requiredCard.style.display = 'none';
       }
       
-      // Initialize Flatpickr on goal deadline inputs in the list
+      // Initialize Litepicker on goal deadline inputs in the list
       document.querySelectorAll('input[data-gbind="deadline"]').forEach(input => {
-        if (!input._flatpickr) {
-          flatpickr(input, {
-            dateFormat: 'Y-m-d',
-            allowInput: true,
-            clickOpens: true,
-            plugins: [
-              function() {
-                return {
-                  onReady: function(selectedDates, dateStr, instance) {
-                    // Add Today button
-                    const todayBtn = document.createElement('button');
-                    todayBtn.className = 'flatpickr-today-button';
-                    todayBtn.type = 'button';
-                    todayBtn.textContent = 'Today';
-                    todayBtn.style.cssText = 'margin-left: 8px; padding: 4px 12px; background: #59a2ff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;';
-                    todayBtn.addEventListener('click', function() {
-                      instance.setDate(new Date(), false);
-                      instance.close();
-                    });
-                    
-                    const calendarContainer = instance.calendarContainer;
-                    if (calendarContainer) {
-                      const monthNav = calendarContainer.querySelector('.flatpickr-month');
-                      if (monthNav && !monthNav.querySelector('.flatpickr-today-button')) {
-                        monthNav.appendChild(todayBtn);
-                      }
-                    }
-                  }
-                };
-              }
-            ]
+        if (!input._litepicker) {
+          input._litepicker = new Litepicker({
+            element: input,
+            format: 'YYYY-MM-DD',
+            singleMode: true,
+            autoApply: true,
+            buttonText: {
+              apply: 'Select',
+              cancel: 'Cancel',
+              previousMonth: '‹',
+              nextMonth: '›',
+              today: 'Today',
+              clear: 'Clear'
+            },
+            dropdowns: {
+              minYear: 2020,
+              maxYear: 2030,
+              months: true,
+              years: true
+            }
           });
         }
       });
@@ -3721,40 +3708,29 @@
         const modal = new bootstrap.Modal(document.getElementById('editTxModal'));
         modal.show();
         
-        // Initialize Flatpickr on edit date input after modal is shown
+        // Initialize Litepicker on edit date input after modal is shown
         modal._element.addEventListener('shown.bs.modal', function() {
           const editTxDateInput = document.getElementById('editTxDate');
-          if (editTxDateInput && !editTxDateInput._flatpickr) {
-            flatpickr(editTxDateInput, {
-              dateFormat: 'Y-m-d',
-              allowInput: true,
-              clickOpens: true,
-              plugins: [
-                function() {
-                  return {
-                    onReady: function(selectedDates, dateStr, instance) {
-                      // Add Today button
-                      const todayBtn = document.createElement('button');
-                      todayBtn.className = 'flatpickr-today-button';
-                      todayBtn.type = 'button';
-                      todayBtn.textContent = 'Today';
-                      todayBtn.style.cssText = 'margin-left: 8px; padding: 4px 12px; background: #59a2ff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;';
-                      todayBtn.addEventListener('click', function() {
-                        instance.setDate(new Date(), false);
-                        instance.close();
-                      });
-                      
-                      const calendarContainer = instance.calendarContainer;
-                      if (calendarContainer) {
-                        const monthNav = calendarContainer.querySelector('.flatpickr-month');
-                        if (monthNav && !monthNav.querySelector('.flatpickr-today-button')) {
-                          monthNav.appendChild(todayBtn);
-                        }
-                      }
-                    }
-                  };
-                }
-              ]
+          if (editTxDateInput && !editTxDateInput._litepicker) {
+            editTxDateInput._litepicker = new Litepicker({
+              element: editTxDateInput,
+              format: 'YYYY-MM-DD',
+              singleMode: true,
+              autoApply: true,
+              buttonText: {
+                apply: 'Select',
+                cancel: 'Cancel',
+                previousMonth: '‹',
+                nextMonth: '›',
+                today: 'Today',
+                clear: 'Clear'
+              },
+              dropdowns: {
+                minYear: 2020,
+                maxYear: 2030,
+                months: true,
+                years: true
+              }
             });
           }
         }, { once: true });
