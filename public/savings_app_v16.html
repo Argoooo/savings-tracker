@@ -3373,6 +3373,10 @@
         // Update UI immediately (optimistic rendering)
         renderTransactions();
         buildTxCharts();
+        renderEnhancedKPIs();
+        renderGoalsGlance();
+        renderPeople();
+        renderGoals();
         
         // Re-enable button immediately
         btn.classList.add('btn-success');
@@ -3407,6 +3411,12 @@
         if(p) {
           p.currentSavings = (p.currentSavings || 0) - amt;
         }
+        renderTransactions();
+        buildTxCharts();
+        renderEnhancedKPIs();
+        renderGoalsGlance();
+        renderPeople();
+        renderGoals();
         showAlert('Failed to add transaction: ' + error.message, 'danger');
         btn.disabled = false;
         btn.innerHTML = originalText;
@@ -3541,6 +3551,10 @@
           hideCrudLoading();
           renderTransactions();
           buildTxCharts();
+          renderEnhancedKPIs();
+          renderGoalsGlance();
+          renderPeople();
+          renderGoals();
         } catch (error) {
           hideCrudLoading();
           showAlert('Failed to delete transaction: ' + error.message, 'danger');
@@ -3652,6 +3666,10 @@
           // Update UI immediately (optimistic update)
           renderTransactions();
           buildTxCharts();
+          renderEnhancedKPIs();
+          renderGoalsGlance();
+          renderPeople();
+          renderGoals();
           modal.hide();
           
           // Success feedback
@@ -3709,6 +3727,10 @@
             // Re-render to show original values
             renderTransactions();
             buildTxCharts();
+            renderEnhancedKPIs();
+            renderGoalsGlance();
+            renderPeople();
+            renderGoals();
             showAlert('Failed to save changes: ' + (error.message || 'Unknown error'), 'danger');
           });
         });
