@@ -105,7 +105,8 @@ async function handler(req, res) {
         person: t.person,
         amount: parseFloat(t.amount),
         note: t.note || '',
-        goalId: t.goal_id || null
+        goalId: t.goal_id || null,
+        createdAt: t.created_at || t.last_modified || null
       })),
       scenarioRates,
       lastModified: settings.last_modified || new Date().toISOString()

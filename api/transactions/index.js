@@ -31,7 +31,8 @@ async function handler(req, res) {
         person: t.person,
         amount: parseFloat(t.amount),
         note: t.note || '',
-        goalId: t.goal_id || null
+        goalId: t.goal_id || null,
+        createdAt: t.created_at || t.last_modified || null
       }));
 
       res.status(200).json(transactionsList);
@@ -43,7 +44,15 @@ async function handler(req, res) {
     try {
       const { id, date, person, amount, note, goalId } = req.body;
 
-      const { error } = await supabase
+      // Validate required fields
+      if (!id || !date || !person || amount === undefined || amount === null) {
+        return res.status(400).json({ 
+          error: 'Missing required fields', 
+          details: 'id, date, person, and amount are required' 
+        });
+      }
+
+      const { data: insertedTransaction, error } = await supabase
         .from('transactions')
         .insert({
           id,
@@ -53,14 +62,47 @@ async function handler(req, res) {
           amount,
           note: note || '',
           goal_id: goalId || null
-        });
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating transaction:', error);
+        console.error('Transaction data:', { id, date, person, amount, note, goalId, trackerId });
+        throw error;
+      }
 
-      res.status(201).json({ success: true, id });
+      if (!insertedTransaction) {
+        throw new Error('Transaction was not inserted - no data returned');
+      }
+
+      res.status(201).json({ 
+        success: true, 
+        id: insertedTransaction.id,
+        transaction: {
+          id: insertedTransaction.id,
+          date: insertedTransaction.date,
+          person: insertedTransaction.person,
+          amount: parseFloat(insertedTransaction.amount),
+          note: insertedTransaction.note || '',
+          goalId: insertedTransaction.goal_id || null,
+          createdAt: insertedTransaction.created_at || insertedTransaction.last_modified || null
+        }
+      });
     } catch (error) {
       console.error('Error creating transaction:', error);
-      res.status(500).json({ error: 'Failed to create transaction', details: error.message });
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      res.status(500).json({ 
+        error: 'Failed to create transaction', 
+        details: error.message,
+        code: error.code,
+        hint: error.hint
+      });
     }
   } else if (req.method === 'PUT') {
     try {

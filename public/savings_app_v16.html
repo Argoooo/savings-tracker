@@ -2151,7 +2151,8 @@
             person: t.person,
             amount: t.amount,
             note: t.note || '',
-            goalId: t.goalId || null
+            goalId: t.goalId || null,
+            createdAt: t.createdAt || null
           })),
           scenarioRates: data.scenarioRates || [5,10,15,20]
         };
@@ -3439,7 +3440,15 @@
       const p = appState.people.find(x => x.name === person);
       
       try {
-        const newTx = { id:uid(), date, person, amount:amt, note, goalId };
+        const newTx = { 
+          id:uid(), 
+          date, 
+          person, 
+          amount:amt, 
+          note, 
+          goalId,
+          createdAt: new Date().toISOString() // Add timestamp for proper sorting
+        };
         
         // Optimistic UI update - update state immediately
         appState.transactions.unshift(newTx);
@@ -3478,14 +3487,43 @@
           savePromises.push(appApi.updatePerson(p));
         }
         
-        // Run API calls in parallel, handle errors silently (UI already updated)
-        Promise.all(savePromises).then(() => {
+        // Run API calls in parallel, handle errors properly
+        Promise.all(savePromises).then((results) => {
           hideCrudLoading();
+          // Update transaction with server data if returned
+          if (results[0] && results[0].transaction) {
+            const serverTx = results[0].transaction;
+            const localTx = appState.transactions.find(t => t.id === newTx.id);
+            if (localTx && serverTx.createdAt) {
+              localTx.createdAt = serverTx.createdAt;
+              // Re-render to ensure correct balance calculation
+              renderTransactions();
+            }
+          }
         }).catch(error => {
           console.error('Error saving transaction to backend:', error);
           hideCrudLoading();
-          // Optionally show a subtle warning that sync failed
-          showAlert('Transaction added locally, but sync failed. Please refresh.', 'warning');
+          // Remove the optimistic update if save failed
+          const txIndex = appState.transactions.findIndex(t => t.id === newTx.id);
+          if (txIndex !== -1) {
+            appState.transactions.splice(txIndex, 1);
+            // Revert person's savings
+            if(p) {
+              p.currentSavings = (p.currentSavings || 0) - amt;
+            }
+            // Re-render UI
+            renderTransactions();
+            renderPeople();
+            buildTxCharts();
+            renderEnhancedKPIs();
+            renderGoalsGlance();
+            renderGoals();
+          }
+          // Show error message with details
+          const errorMsg = error.message || error.details || 'Unknown error';
+          showAlert(`Failed to save transaction: ${errorMsg}. Please try again.`, 'danger');
+          btn.disabled = false;
+          btn.innerHTML = originalText;
         });
       } catch (error) {
         // Rollback optimistic update on error
@@ -3548,7 +3586,12 @@
       const sortedByDateAsc = appState.transactions.slice().sort((a,b)=> {
         const dateCompare = a.date.localeCompare(b.date);
         if (dateCompare !== 0) return dateCompare;
-        return a.id.localeCompare(b.id); // Secondary sort by ID for same dates
+        // For same dates, sort by created_at (most recent first for balance calculation)
+        // If no createdAt, fall back to ID for consistency
+        if (a.createdAt && b.createdAt) {
+          return new Date(a.createdAt) - new Date(b.createdAt);
+        }
+        return a.id.localeCompare(b.id); // Fallback to ID for same dates
       });
       
       // Define colors for goals
