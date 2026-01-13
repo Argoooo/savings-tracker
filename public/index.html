@@ -33,54 +33,77 @@
   </div>
 
   <script>
-    // Set Supabase credentials (same as login.html)
-    window.SUPABASE_URL = window.SUPABASE_URL || 'https://uqbcokdpldhrxccyddfz.supabase.co';
-    window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxYmNva2RwbGRocnhjY3lkZGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTM5MzcsImV4cCI6MjA3NzY2OTkzN30.4yknX1zqpfloABqexwzl0ElLYVp4C_atUbNAR8P_1eU';
-
-    // Initialize Supabase client
-    const supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-
-    console.log('🔍 index.html: Checking auth state...');
-    console.log('🔍 URL:', window.location.href);
-    console.log('🔍 Hash:', window.location.hash);
-
-    // Handle OAuth callback first (Supabase uses hash fragments)
-    if (window.location.hash && window.location.hash.includes('access_token')) {
-      console.log('🔍 OAuth callback detected, processing...');
-      // Process the OAuth callback
-      supabaseClient.auth.getSession().then(({ data: { session } }) => {
-        console.log('🔍 Session after OAuth:', session ? '✅ Found' : '❌ Not found');
-        if (session) {
-          // Clear hash and redirect
-          console.log('🔄 Redirecting to savings_app_v16.html...');
-          window.location.replace('/savings_app_v16.html');
-        } else {
-          console.error('❌ No session after OAuth callback');
+    // Ensure Supabase library is loaded before proceeding
+    if (typeof window.supabase === 'undefined') {
+      console.error('❌ Supabase library not loaded. Waiting...');
+      // Wait for script to load
+      const checkSupabase = setInterval(() => {
+        if (typeof window.supabase !== 'undefined') {
+          clearInterval(checkSupabase);
+          initApp();
+        }
+      }, 100);
+      setTimeout(() => {
+        clearInterval(checkSupabase);
+        if (typeof window.supabase === 'undefined') {
+          console.error('❌ Supabase library failed to load');
           window.location.href = '/login.html';
         }
-      }).catch((error) => {
-        console.error('❌ OAuth callback error:', error);
-        window.location.href = '/login.html';
-      });
+      }, 5000);
     } else {
-      // Check authentication status
-      console.log('🔍 No OAuth hash, checking existing session...');
-      supabaseClient.auth.getSession().then(({ data: { session } }) => {
-        console.log('🔍 Session check result:', session ? '✅ Authenticated' : '❌ Not authenticated');
-        if (session) {
-          // User is authenticated - redirect to main app
-          console.log('🔄 Redirecting to savings_app_v16.html...');
-          window.location.href = '/savings_app_v16.html';
-        } else {
-          // User is not authenticated - redirect to login
-          console.log('🔄 Redirecting to login.html...');
+      initApp();
+    }
+
+    function initApp() {
+      // Set Supabase credentials (same as login.html)
+      window.SUPABASE_URL = window.SUPABASE_URL || 'https://uqbcokdpldhrxccyddfz.supabase.co';
+      window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxYmNva2RwbGRocnhjY3lkZGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTM5MzcsImV4cCI6MjA3NzY2OTkzN30.4yknX1zqpfloABqexwzl0ElLYVp4C_atUbNAR8P_1eU';
+
+      // Initialize Supabase client (using different variable name to avoid conflicts)
+      const supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+      console.log('🔍 index.html: Checking auth state...');
+      console.log('🔍 URL:', window.location.href);
+      console.log('🔍 Hash:', window.location.hash);
+
+      // Handle OAuth callback first (Supabase uses hash fragments)
+      if (window.location.hash && window.location.hash.includes('access_token')) {
+        console.log('🔍 OAuth callback detected, processing...');
+        // Process the OAuth callback
+        supabaseClient.auth.getSession().then(({ data: { session } }) => {
+          console.log('🔍 Session after OAuth:', session ? '✅ Found' : '❌ Not found');
+          if (session) {
+            // Clear hash and redirect
+            console.log('🔄 Redirecting to savings_app_v16.html...');
+            window.location.replace('/savings_app_v16.html');
+          } else {
+            console.error('❌ No session after OAuth callback');
+            window.location.href = '/login.html';
+          }
+        }).catch((error) => {
+          console.error('❌ OAuth callback error:', error);
           window.location.href = '/login.html';
-        }
-      }).catch((error) => {
-        console.error('❌ Auth check error:', error);
-        // On error, redirect to login
-        window.location.href = '/login.html';
-      });
+        });
+      } else {
+        // Check authentication status
+        console.log('🔍 No OAuth hash, checking existing session...');
+        supabaseClient.auth.getSession().then(({ data: { session } }) => {
+          console.log('🔍 Session check result:', session ? '✅ Authenticated' : '❌ Not authenticated');
+          if (session) {
+            // User is authenticated - redirect to main app
+            console.log('🔄 Redirecting to savings_app_v16.html...');
+            window.location.href = '/savings_app_v16.html';
+          } else {
+            // User is not authenticated - redirect to login
+            console.log('🔄 Redirecting to login.html...');
+            window.location.href = '/login.html';
+          }
+        }).catch((error) => {
+          console.error('❌ Auth check error:', error);
+          // On error, redirect to login
+          window.location.href = '/login.html';
+        });
+      }
     }
   </script>
 </body>
