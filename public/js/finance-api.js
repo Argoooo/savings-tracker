@@ -68,25 +68,25 @@ class FinanceAPI {
 
   // Accounts
   async getAccounts() {
-    return await this.request('/finance-accounts');
+    return await this.request('/finance/accounts');
   }
 
   async createAccount(account) {
-    return await this.request('/finance-accounts', {
+    return await this.request('/finance/accounts', {
       method: 'POST',
       body: account
     });
   }
 
   async updateAccount(id, account) {
-    return await this.request('/finance-accounts', {
+    return await this.request('/finance/accounts', {
       method: 'PUT',
       body: { id, ...account }
     });
   }
 
   async deleteAccount(id) {
-    return await this.request(`/finance-accounts?id=${id}`, {
+    return await this.request(`/finance/accounts?id=${id}`, {
       method: 'DELETE'
     });
   }
@@ -97,25 +97,25 @@ class FinanceAPI {
     if (accountId) params.append('accountId', accountId);
     if (limit) params.append('limit', limit);
     const query = params.toString();
-    return await this.request(`/finance-transactions${query ? '?' + query : ''}`);
+    return await this.request(`/finance/transactions${query ? '?' + query : ''}`);
   }
 
   async createTransaction(transaction) {
-    return await this.request('/finance-transactions', {
+    return await this.request('/finance/transactions', {
       method: 'POST',
       body: transaction
     });
   }
 
   async updateTransaction(id, transaction) {
-    return await this.request('/finance-transactions', {
+    return await this.request('/finance/transactions', {
       method: 'PUT',
       body: { id, ...transaction }
     });
   }
 
   async deleteTransaction(id) {
-    return await this.request(`/finance-transactions?id=${id}`, {
+    return await this.request(`/finance/transactions?id=${id}`, {
       method: 'DELETE'
     });
   }
@@ -125,25 +125,25 @@ class FinanceAPI {
     const params = new URLSearchParams();
     if (accountId) params.append('accountId', accountId);
     const query = params.toString();
-    return await this.request(`/finance-spend-limits${query ? '?' + query : ''}`);
+    return await this.request(`/finance/spend-limits${query ? '?' + query : ''}`);
   }
 
   async createSpendLimit(limit) {
-    return await this.request('/finance-spend-limits', {
+    return await this.request('/finance/spend-limits', {
       method: 'POST',
       body: limit
     });
   }
 
   async updateSpendLimit(id, limit) {
-    return await this.request('/finance-spend-limits', {
+    return await this.request('/finance/spend-limits', {
       method: 'PUT',
       body: { id, ...limit }
     });
   }
 
   async deleteSpendLimit(id) {
-    return await this.request(`/finance-spend-limits?id=${id}`, {
+    return await this.request(`/finance/spend-limits?id=${id}`, {
       method: 'DELETE'
     });
   }
