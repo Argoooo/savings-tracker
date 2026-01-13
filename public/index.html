@@ -38,7 +38,7 @@
     window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxYmNva2RwbGRocnhjY3lkZGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTM5MzcsImV4cCI6MjA3NzY2OTkzN30.4yknX1zqpfloABqexwzl0ElLYVp4C_atUbNAR8P_1eU';
 
     // Initialize Supabase client
-    const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
     console.log('🔍 index.html: Checking auth state...');
     console.log('🔍 URL:', window.location.href);
@@ -48,7 +48,7 @@
     if (window.location.hash && window.location.hash.includes('access_token')) {
       console.log('🔍 OAuth callback detected, processing...');
       // Process the OAuth callback
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      supabaseClient.auth.getSession().then(({ data: { session } }) => {
         console.log('🔍 Session after OAuth:', session ? '✅ Found' : '❌ Not found');
         if (session) {
           // Clear hash and redirect
@@ -65,7 +65,7 @@
     } else {
       // Check authentication status
       console.log('🔍 No OAuth hash, checking existing session...');
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      supabaseClient.auth.getSession().then(({ data: { session } }) => {
         console.log('🔍 Session check result:', session ? '✅ Authenticated' : '❌ Not authenticated');
         if (session) {
           // User is authenticated - redirect to main app

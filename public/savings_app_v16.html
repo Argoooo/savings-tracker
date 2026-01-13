@@ -1543,8 +1543,8 @@
           if (typeof window.supabase === 'undefined') {
             throw new Error('Supabase library not loaded');
           }
-          const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-          supabase.auth.getSession().then(({ data: { session } }) => {
+          const supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+          supabaseClient.auth.getSession().then(({ data: { session } }) => {
             if (session) {
               console.log('✅ Session found via direct check');
               updateLoadingStatus('Session found');
@@ -1553,10 +1553,10 @@
               // Create auth object manually if needed
               if (!window.auth || typeof window.auth === 'undefined') {
                 window.auth = {
-                  supabase: supabase,
+                  supabase: supabaseClient,
                   session: session,
                   checkSession: async () => {
-                    const { data } = await supabase.auth.getSession();
+                    const { data } = await supabaseClient.auth.getSession();
                     return data.session;
                   },
                   getToken: () => session?.access_token,
@@ -1564,7 +1564,7 @@
                     'Authorization': `Bearer ${session.access_token}`,
                     'Content-Type': 'application/json'
                   }),
-                  signOut: () => supabase.auth.signOut()
+                  signOut: () => supabaseClient.auth.signOut()
                 };
                 console.log('✅ Created window.auth manually');
               }

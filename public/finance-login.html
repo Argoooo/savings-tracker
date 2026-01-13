@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finance Tracker - Login</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <link rel="stylesheet" href="/css/finance-tracker.css">
+  <style>
+    .login-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+    }
+    .login-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+    .login-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .login-subtitle {
+      color: #666;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #333;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .btn-secondary {
+      width: 100%;
+      padding: 14px;
+      background: white;
+      color: #667eea;
+      border: 2px solid #667eea;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+    .error-message {
+      background: #fee;
+      color: #c33;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .error-message.show {
+      display: block;
+    }
+    .divider {
+      text-align: center;
+      margin: 24px 0;
+      color: #999;
+      position: relative;
+    }
+    .divider::before,
+    .divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 40%;
+      height: 1px;
+      background: #e0e0e0;
+    }
+    .divider::before {
+      left: 0;
+    }
+    .divider::after {
+      right: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <h1 class="login-title">Finance Tracker</h1>
+      <p class="login-subtitle">Sign in to manage your finances</p>
+      
+      <div class="error-message" id="errorMessage"></div>
+      
+      <form id="loginForm">
+        <div class="form-group">
+          <label class="form-label" for="email">Email</label>
+          <input type="email" id="email" class="form-input" required placeholder="your@email.com">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input type="password" id="password" class="form-input" required placeholder="••••••••">
+        </div>
+        
+        <button type="submit" class="btn-primary">Sign In</button>
+      </form>
+      
+      <div class="divider">or</div>
+      
+      <button class="btn-secondary" id="signUpBtn">Create Account</button>
+      <button class="btn-secondary" id="forgotPasswordBtn" style="margin-top: 8px;">Forgot Password?</button>
+    </div>
+  </div>
+
+  <script>
+    // Set Supabase credentials
+    window.SUPABASE_URL = window.SUPABASE_URL || 'https://uqbcokdpldhrxccyddfz.supabase.co';
+    window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxYmNva2RwbGRocnhjY3lkZGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwOTM5MzcsImV4cCI6MjA3NzY2OTkzN30.4yknX1zqpfloABqexwzl0ElLYVp4C_atUbNAR8P_1eU';
+
+    const supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    const errorMessage = document.getElementById('errorMessage');
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.classList.add('show');
+      setTimeout(() => {
+        errorMessage.classList.remove('show');
+      }, 5000);
+    }
+
+    // Login form
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (error) throw error;
+
+        // Redirect to finance tracker
+        window.location.href = '/finance-tracker.html';
+      } catch (error) {
+        showError(error.message || 'Failed to sign in');
+      }
+    });
+
+    // Sign up
+    document.getElementById('signUpBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      if (!email || !password) {
+        showError('Please enter email and password');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabaseClient.auth.signUp({
+          email,
+          password
+        });
+
+        if (error) throw error;
+
+        showError('Account created! Please check your email to verify your account.');
+      } catch (error) {
+        showError(error.message || 'Failed to create account');
+      }
+    });
+
+    // Forgot password
+    document.getElementById('forgotPasswordBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+
+      if (!email) {
+        showError('Please enter your email address');
+        return;
+      }
+
+      try {
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/finance-login.html`
+        });
+
+        if (error) throw error;
+
+        showError('Password reset email sent! Check your inbox.');
+      } catch (error) {
+        showError(error.message || 'Failed to send reset email');
+      }
+    });
+
+    // Check if already logged in
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        window.location.href = '/finance-tracker.html';
+      }
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+

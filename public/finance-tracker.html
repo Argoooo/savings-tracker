@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finance Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <link rel="stylesheet" href="/css/finance-tracker.css">
+</head>
+<body>
+  <!-- Status Bar (Mobile) -->
+  <div class="status-bar">
+    <span class="status-time">10:51</span>
+    <div class="status-icons">
+      <span class="battery">65%</span>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-content">
+      <span class="username" id="username">@pebbles28</span>
+      <span class="header-arrow">→</span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Total Net Worth Card -->
+    <div class="net-worth-card">
+      <div class="net-worth-header">
+        <h2>Total Net Worth</h2>
+        <button class="eye-toggle" id="eyeToggle" aria-label="Toggle visibility">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+      </div>
+      <div class="net-worth-amount" id="netWorth">P0.00</div>
+    </div>
+
+    <!-- Account Cards Grid -->
+    <div class="accounts-grid" id="accountsGrid">
+      <!-- Account cards will be dynamically inserted here -->
+    </div>
+
+    <!-- Add Account Card -->
+    <div class="account-card add-account-card" id="addAccountCard">
+      <div class="add-account-content">
+        <div class="add-icon">+</div>
+        <span>Add Account</span>
+      </div>
+    </div>
+
+    <!-- Set Spend Limits Card -->
+    <div class="spend-limits-card" id="spendLimitsCard">
+      <span>Set your Spend Limits</span>
+      <span class="card-arrow">→</span>
+    </div>
+
+    <!-- Transactions Section -->
+    <section class="transactions-section">
+      <h3 class="section-title">Transactions</h3>
+      <div class="transactions-list" id="transactionsList">
+        <!-- Transactions will be dynamically inserted here -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-page="home">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+      </svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-item" data-page="finsights">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+        <path d="M2 17l10 5 10-5"></path>
+        <path d="M2 12l10 5 10-5"></path>
+      </svg>
+      <span>Finsights</span>
+    </button>
+  </nav>
+
+  <!-- Add Account Modal -->
+  <div class="modal" id="addAccountModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add Account</h2>
+        <button class="modal-close" id="closeModal">&times;</button>
+      </div>
+      
+      <!-- Account Type Tabs -->
+      <div class="account-type-tabs">
+        <button class="tab-btn active" data-type="Savings">Savings</button>
+        <button class="tab-btn" data-type="Wallet">Wallet</button>
+        <button class="tab-btn" data-type="Credit">Credit</button>
+        <button class="tab-btn" data-type="Loans">Loans</button>
+        <button class="tab-btn" data-type="Investment">Investment</button>
+      </div>
+
+      <!-- Bank List -->
+      <div class="bank-list" id="bankList">
+        <!-- Banks will be dynamically inserted here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Account Details Modal -->
+  <div class="modal" id="accountDetailsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="accountDetailsTitle">Account Details</h2>
+        <button class="modal-close" id="closeAccountModal">&times;</button>
+      </div>
+      <div class="account-details-content" id="accountDetailsContent">
+        <!-- Account details will be inserted here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/auth.js"></script>
+  <script src="/js/finance-api.js"></script>
+  <script src="/js/finance-tracker.js"></script>
+</body>
+</html>
+
+
+
+
+
+
