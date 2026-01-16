@@ -2,9 +2,6 @@
   "version": 2,
   "cleanUrls": false,
   "trailingSlash": false,
-  "ignore": [
-    "api/lib/**"
-  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
