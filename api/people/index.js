@@ -41,6 +41,7 @@ async function handler(req, res) {
             name: person.name,
             currentSavings: parseFloat(person.current_savings || 0),
             fixedMonthlyContribution: parseFloat(person.fixed_monthly_contribution || 0),
+            ratePct: person.rate_pct !== null && person.rate_pct !== undefined ? parseFloat(person.rate_pct) : null,
             incomes: (incomes || []).map(income => ({
               id: income.id,
               label: income.label,
@@ -58,7 +59,7 @@ async function handler(req, res) {
     }
   } else if (req.method === 'POST') {
     try {
-      const { id, name, currentSavings, fixedMonthlyContribution, incomes } = req.body;
+      const { id, name, currentSavings, fixedMonthlyContribution, ratePct, incomes } = req.body;
 
       // Insert person
       const { data: person, error: personError } = await supabase
@@ -68,7 +69,8 @@ async function handler(req, res) {
           tracker_id: trackerId,
           name,
           current_savings: currentSavings || 0,
-          fixed_monthly_contribution: fixedMonthlyContribution || 0
+          fixed_monthly_contribution: fixedMonthlyContribution || 0,
+          rate_pct: ratePct !== null && ratePct !== undefined ? ratePct : null
         })
         .select()
         .single();
@@ -123,7 +125,7 @@ async function handler(req, res) {
     }
   } else if (req.method === 'PUT') {
     try {
-      const { id, name, currentSavings, fixedMonthlyContribution, incomes } = req.body;
+      const { id, name, currentSavings, fixedMonthlyContribution, ratePct, incomes } = req.body;
 
       // First, verify the person exists and belongs to this tracker
       const { data: existingPerson, error: checkError } = await supabase
@@ -141,14 +143,21 @@ async function handler(req, res) {
       }
 
       // Update person (verify it belongs to user's tracker)
+      const updateData = {
+        name,
+        current_savings: currentSavings,
+        fixed_monthly_contribution: fixedMonthlyContribution,
+        updated_at: new Date().toISOString()
+      };
+      
+      // Only include rate_pct if it's provided (can be null to use global rate)
+      if (ratePct !== undefined) {
+        updateData.rate_pct = ratePct !== null && ratePct !== '' ? ratePct : null;
+      }
+
       const { data: updatedPerson, error: personError } = await supabase
         .from('people')
-        .update({
-          name,
-          current_savings: currentSavings,
-          fixed_monthly_contribution: fixedMonthlyContribution,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', id)
         .eq('tracker_id', trackerId)
         .select()

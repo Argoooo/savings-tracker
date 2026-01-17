@@ -2229,7 +2229,9 @@
     function totalMonthlyIncome(p){ return (p.incomes||[]).reduce((s,i)=> s + toMonthly(Number(i.amount||0), i.frequency||'monthly'), 0); }
     function totalMonthlyContribution(p, rate = null){ 
       const income = totalMonthlyIncome(p);
-      const rateContrib = rate !== null ? income * (rate / 100) : income * ((appState.settings.currentRatePct || 0) / 100);
+      // Use person's individual rate if set, otherwise use provided rate, otherwise use global rate
+      const effectiveRate = rate !== null ? rate : (p.ratePct !== null && p.ratePct !== undefined ? p.ratePct : (appState.settings.currentRatePct || 0));
+      const rateContrib = income * (effectiveRate / 100);
       const fixedContrib = Number(p.fixedMonthlyContribution || 0);
       return rateContrib + fixedContrib;
     }
@@ -2335,8 +2337,7 @@
       }
       
       // Goals On Track
-      const income = householdMonthlyIncome();
-      const monthly = income * (appState.settings.currentRatePct||0)/100;
+      const monthly = householdMonthlyContribution();
       const apy = appState.settings.apyPct||0;
       
       let onTrackCount = 0;
@@ -2357,8 +2358,7 @@
         return;
       }
       
-      const income = householdMonthlyIncome();
-      const monthly = income * (appState.settings.currentRatePct||0)/100;
+      const monthly = householdMonthlyContribution();
       const apy = appState.settings.apyPct||0;
       
       const goalsHtml = appState.goals.slice()
@@ -2564,12 +2564,22 @@
                     <div class="text-muted small mb-1" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Monthly Contribution</div>
                     <div class="fw-bold fs-5" style="color: var(--brand);">${fmtMoney(totalContribution)}</div>
                     <div class="small text-muted mt-1">
-                      ${monthly > 0 ? `<span class="badge bg-primary bg-opacity-20 text-white me-1">📊 Rate-based</span>` : ''}
+                      ${monthly > 0 ? `<span class="badge bg-primary bg-opacity-20 text-white me-1">📊 Rate-based (${(p.ratePct !== null && p.ratePct !== undefined ? p.ratePct : appState.settings.currentRatePct || 12).toFixed(1)}%)</span>` : ''}
                       ${fixedContrib > 0 ? `<span class="badge bg-success bg-opacity-20 text-white">Fixed: ${fmtMoney(fixedContrib)}</span>` : ''}
                       ${totalContribution === 0 ? '<span class="text-muted">No contribution set</span>' : ''}
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <!-- Rate Percentage Input -->
+              <div class="mb-4">
+                <label class="form-label small fw-semibold text-muted mb-2" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Savings Rate Percentage</label>
+                <div class="input-group">
+                  <input class="form-control" type="number" step="0.1" min="0" max="100" value="${p.ratePct !== null && p.ratePct !== undefined ? p.ratePct : ''}" data-ptype="ratePct" data-pid="${p.id}" placeholder="${appState.settings.currentRatePct || 12}" style="border-radius: 8px; border: 1px solid rgba(255,255,255,.1);"/>
+                  <span class="input-group-text bg-transparent border-0 text-muted small" style="font-size: 0.75rem;">%</span>
+                </div>
+                <small class="text-muted" style="font-size: 0.7rem;">${p.ratePct !== null && p.ratePct !== undefined ? `Using individual rate (${p.ratePct}%)` : `Using global rate (${appState.settings.currentRatePct || 12}%) - leave empty to use global`}</small>
               </div>
 
               <!-- Fixed Monthly Input -->
@@ -2641,6 +2651,11 @@
           if(type==='name') { p.name = e.target.value.trim()||'Person'; }
           if(type==='savings'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return showAlert('Invalid savings amount', 'warning'); p.currentSavings=v; }
           if(type==='fixedContrib'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return showAlert('Invalid fixed contribution', 'warning'); p.fixedMonthlyContribution=v; }
+          if(type==='ratePct'){ 
+            const v = e.target.value.trim() === '' ? null : Number(e.target.value); 
+            if(v !== null && (!isFinite(v) || v < 0 || v > 100)) return showAlert('Invalid rate percentage (0-100)', 'warning'); 
+            p.ratePct = v;
+          }
           if(type==='incomeLabel' || type==='incomeAmount' || type==='incomeFreq'){
             const inc = p.incomes.find(i=> i.id===e.target.dataset.iid); if(!inc) return;
             if(type==='incomeLabel') inc.label = e.target.value.trim()||'Income';
@@ -2652,6 +2667,7 @@
           if(type==='name') updateMessage = `Updating ${p.name}'s name...`;
           if(type==='savings') updateMessage = `Updating ${p.name}'s savings...`;
           if(type==='fixedContrib') updateMessage = `Updating ${p.name}'s contribution...`;
+          if(type==='ratePct') updateMessage = `Updating ${p.name}'s savings rate...`;
           if(type==='incomeLabel') updateMessage = `Updating income source...`;
           if(type==='incomeAmount') updateMessage = `Updating income amount...`;
           if(type==='incomeFreq') updateMessage = `Updating income frequency...`;
@@ -2668,6 +2684,7 @@
               name: p.name || 'Person',
               currentSavings: Number(p.currentSavings) || 0,
               fixedMonthlyContribution: Number(p.fixedMonthlyContribution) || 0,
+              ratePct: p.ratePct !== null && p.ratePct !== undefined ? Number(p.ratePct) : null,
               incomes: p.incomes.map(inc => ({
                 id: inc.id || uid(),
                 label: inc.label || 'Income',
@@ -2696,6 +2713,7 @@
           name: p.name || 'Person',
           currentSavings: Number(p.currentSavings) || 0,
           fixedMonthlyContribution: Number(p.fixedMonthlyContribution) || 0,
+          ratePct: p.ratePct !== null && p.ratePct !== undefined ? Number(p.ratePct) : null,
           incomes: p.incomes.map(inc => ({
             id: inc.id || uid(),
             label: inc.label || 'Income',
@@ -2875,8 +2893,7 @@
       const filterOwner = $('#goalsFilterOwner')?.value || '';
       const filterStatus = $('#goalsFilterStatus')?.value || '';
       
-      const income = householdMonthlyIncome();
-      const monthly = income * (appState.settings.currentRatePct||0)/100;
+      const monthly = householdMonthlyContribution();
       const apy = appState.settings.apyPct||0;
       
       // Filter and sort goals
@@ -3246,9 +3263,12 @@
         );
 
         // Per‑person contributions (rate-based + fixed) - only selected people
+        // For scenario rates, use the scenario rate; for current rate, use person's individual rate if set
         const rows = selectedPeople.map(p => {
           const inc = totalMonthlyIncome(p);
-          const rateBasedContrib = inc * (rate / 100);
+          // If this is the current rate scenario, use person's individual rate if set, otherwise use scenario rate
+          const effectiveRate = isCurrentRate && (p.ratePct !== null && p.ratePct !== undefined) ? p.ratePct : rate;
+          const rateBasedContrib = inc * (effectiveRate / 100);
           const fixedContrib = Number(p.fixedMonthlyContribution || 0);
           const totalContrib = rateBasedContrib + fixedContrib;
           
@@ -4106,8 +4126,7 @@
     }
     function buildTimelineChart(){
       const ctx = $('#timelineChart'); if(timelineChart) timelineChart.destroy();
-      const income = householdMonthlyIncome();
-      const monthly = income * (appState.settings.currentRatePct||0)/100;
+      const monthly = householdMonthlyContribution();
       const apy = appState.settings.apyPct||0;
       const labels = appState.goals.map(g=> g.name);
       const dataInMonths = appState.goals.map(g=> {
