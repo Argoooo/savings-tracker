@@ -1204,8 +1204,8 @@
           💳
         </div>
         <div>
-          <h5 class="mb-0" style="font-weight: 600;">Add Savings Transaction</h5>
-          <small class="text-muted">Record your savings contributions</small>
+          <h5 class="mb-0" style="font-weight: 600;">Add Transaction</h5>
+          <small class="text-muted">Record savings contributions and expenses</small>
         </div>
       </div>
       <button class="btn btn-sm btn-outline-secondary" id="toggleAddTx" style="border-radius: 8px; padding: 0.25rem 0.5rem;" title="Toggle form">
@@ -1220,6 +1220,13 @@
       <div class="col-md-2">
         <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Amount</label>
         <input class="form-control form-control-lg" id="txAmount" placeholder="5000" step="0.01" type="number" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Type</label>
+        <select class="form-select form-select-lg" id="txType" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);">
+          <option value="savings">Savings</option>
+          <option value="expense">Expense</option>
+        </select>
       </div>
       <div class="col-md-2">
         <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Person</label>
@@ -1286,6 +1293,7 @@
           <tr>
             <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Date</th>
             <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Person</th>
+            <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Type</th>
             <th class="text-end" style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Amount</th>
             <th class="text-end" style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Balance</th>
             <th style="padding: 1rem; font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Goal</th>
@@ -2229,9 +2237,7 @@
     function totalMonthlyIncome(p){ return (p.incomes||[]).reduce((s,i)=> s + toMonthly(Number(i.amount||0), i.frequency||'monthly'), 0); }
     function totalMonthlyContribution(p, rate = null){ 
       const income = totalMonthlyIncome(p);
-      // Use person's individual rate if set, otherwise use provided rate, otherwise use global rate
-      const effectiveRate = rate !== null ? rate : (p.ratePct !== null && p.ratePct !== undefined ? p.ratePct : (appState.settings.currentRatePct || 0));
-      const rateContrib = income * (effectiveRate / 100);
+      const rateContrib = rate !== null ? income * (rate / 100) : income * ((appState.settings.currentRatePct || 0) / 100);
       const fixedContrib = Number(p.fixedMonthlyContribution || 0);
       return rateContrib + fixedContrib;
     }
@@ -2337,7 +2343,8 @@
       }
       
       // Goals On Track
-      const monthly = householdMonthlyContribution();
+      const income = householdMonthlyIncome();
+      const monthly = income * (appState.settings.currentRatePct||0)/100;
       const apy = appState.settings.apyPct||0;
       
       let onTrackCount = 0;
@@ -2358,7 +2365,8 @@
         return;
       }
       
-      const monthly = householdMonthlyContribution();
+      const income = householdMonthlyIncome();
+      const monthly = income * (appState.settings.currentRatePct||0)/100;
       const apy = appState.settings.apyPct||0;
       
       const goalsHtml = appState.goals.slice()
@@ -2564,22 +2572,12 @@
                     <div class="text-muted small mb-1" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Monthly Contribution</div>
                     <div class="fw-bold fs-5" style="color: var(--brand);">${fmtMoney(totalContribution)}</div>
                     <div class="small text-muted mt-1">
-                      ${monthly > 0 ? `<span class="badge bg-primary bg-opacity-20 text-white me-1">📊 Rate-based (${(p.ratePct !== null && p.ratePct !== undefined ? p.ratePct : appState.settings.currentRatePct || 12).toFixed(1)}%)</span>` : ''}
+                      ${monthly > 0 ? `<span class="badge bg-primary bg-opacity-20 text-white me-1">📊 Rate-based</span>` : ''}
                       ${fixedContrib > 0 ? `<span class="badge bg-success bg-opacity-20 text-white">Fixed: ${fmtMoney(fixedContrib)}</span>` : ''}
                       ${totalContribution === 0 ? '<span class="text-muted">No contribution set</span>' : ''}
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <!-- Rate Percentage Input -->
-              <div class="mb-4">
-                <label class="form-label small fw-semibold text-muted mb-2" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Savings Rate Percentage</label>
-                <div class="input-group">
-                  <input class="form-control" type="number" step="0.1" min="0" max="100" value="${p.ratePct !== null && p.ratePct !== undefined ? p.ratePct : ''}" data-ptype="ratePct" data-pid="${p.id}" placeholder="${appState.settings.currentRatePct || 12}" style="border-radius: 8px; border: 1px solid rgba(255,255,255,.1);"/>
-                  <span class="input-group-text bg-transparent border-0 text-muted small" style="font-size: 0.75rem;">%</span>
-                </div>
-                <small class="text-muted" style="font-size: 0.7rem;">${p.ratePct !== null && p.ratePct !== undefined ? `Using individual rate (${p.ratePct}%)` : `Using global rate (${appState.settings.currentRatePct || 12}%) - leave empty to use global`}</small>
               </div>
 
               <!-- Fixed Monthly Input -->
@@ -2651,11 +2649,6 @@
           if(type==='name') { p.name = e.target.value.trim()||'Person'; }
           if(type==='savings'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return showAlert('Invalid savings amount', 'warning'); p.currentSavings=v; }
           if(type==='fixedContrib'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return showAlert('Invalid fixed contribution', 'warning'); p.fixedMonthlyContribution=v; }
-          if(type==='ratePct'){ 
-            const v = e.target.value.trim() === '' ? null : Number(e.target.value); 
-            if(v !== null && (!isFinite(v) || v < 0 || v > 100)) return showAlert('Invalid rate percentage (0-100)', 'warning'); 
-            p.ratePct = v;
-          }
           if(type==='incomeLabel' || type==='incomeAmount' || type==='incomeFreq'){
             const inc = p.incomes.find(i=> i.id===e.target.dataset.iid); if(!inc) return;
             if(type==='incomeLabel') inc.label = e.target.value.trim()||'Income';
@@ -2667,7 +2660,6 @@
           if(type==='name') updateMessage = `Updating ${p.name}'s name...`;
           if(type==='savings') updateMessage = `Updating ${p.name}'s savings...`;
           if(type==='fixedContrib') updateMessage = `Updating ${p.name}'s contribution...`;
-          if(type==='ratePct') updateMessage = `Updating ${p.name}'s savings rate...`;
           if(type==='incomeLabel') updateMessage = `Updating income source...`;
           if(type==='incomeAmount') updateMessage = `Updating income amount...`;
           if(type==='incomeFreq') updateMessage = `Updating income frequency...`;
@@ -2684,7 +2676,6 @@
               name: p.name || 'Person',
               currentSavings: Number(p.currentSavings) || 0,
               fixedMonthlyContribution: Number(p.fixedMonthlyContribution) || 0,
-              ratePct: p.ratePct !== null && p.ratePct !== undefined ? Number(p.ratePct) : null,
               incomes: p.incomes.map(inc => ({
                 id: inc.id || uid(),
                 label: inc.label || 'Income',
@@ -2713,7 +2704,6 @@
           name: p.name || 'Person',
           currentSavings: Number(p.currentSavings) || 0,
           fixedMonthlyContribution: Number(p.fixedMonthlyContribution) || 0,
-          ratePct: p.ratePct !== null && p.ratePct !== undefined ? Number(p.ratePct) : null,
           incomes: p.incomes.map(inc => ({
             id: inc.id || uid(),
             label: inc.label || 'Income',
@@ -2893,7 +2883,8 @@
       const filterOwner = $('#goalsFilterOwner')?.value || '';
       const filterStatus = $('#goalsFilterStatus')?.value || '';
       
-      const monthly = householdMonthlyContribution();
+      const income = householdMonthlyIncome();
+      const monthly = income * (appState.settings.currentRatePct||0)/100;
       const apy = appState.settings.apyPct||0;
       
       // Filter and sort goals
@@ -3263,12 +3254,9 @@
         );
 
         // Per‑person contributions (rate-based + fixed) - only selected people
-        // For scenario rates, use the scenario rate; for current rate, use person's individual rate if set
         const rows = selectedPeople.map(p => {
           const inc = totalMonthlyIncome(p);
-          // If this is the current rate scenario, use person's individual rate if set, otherwise use scenario rate
-          const effectiveRate = isCurrentRate && (p.ratePct !== null && p.ratePct !== undefined) ? p.ratePct : rate;
-          const rateBasedContrib = inc * (effectiveRate / 100);
+          const rateBasedContrib = inc * (rate / 100);
           const fixedContrib = Number(p.fixedMonthlyContribution || 0);
           const totalContrib = rateBasedContrib + fixedContrib;
           
@@ -3436,6 +3424,7 @@
       const btn = $('#addTxBtn');
       const date = $('#txDate').value || new Date().toISOString().slice(0,10);
       const amt = Number($('#txAmount').value||0); 
+      const txType = $('#txType').value === 'expense' ? 'expense' : 'savings';
       
       if(!isFinite(amt)||amt<=0) {
         // Better error feedback
@@ -3449,7 +3438,11 @@
       const goalId = $('#txGoal').value || null;
       
       // Show loading popup
-      showCrudLoading('Adding transaction...', `Saving ${fmtMoney(amt)} for ${person}`);
+      const signedAmount = txType === 'expense' ? -Math.abs(amt) : Math.abs(amt);
+      showCrudLoading(
+        'Adding transaction...',
+        `${txType === 'expense' ? 'Recording expense of' : 'Saving'} ${fmtMoney(Math.abs(amt))} for ${person}`
+      );
       
       // Show loading state
       const originalText = btn.innerHTML;
@@ -3464,7 +3457,7 @@
           id:uid(), 
           date, 
           person, 
-          amount:amt, 
+          amount:signedAmount, 
           note, 
           goalId,
           createdAt: new Date().toISOString() // Add timestamp for proper sorting
@@ -3475,11 +3468,11 @@
         
         // Update person's current savings locally
         if(p) {
-          p.currentSavings = (p.currentSavings || 0) + amt;
+          p.currentSavings = (p.currentSavings || 0) + signedAmount;
         }
         
         // Clear form immediately for better UX
-        $('#txAmount').value=''; $('#txNote').value=''; $('#txGoal').value = '';
+        $('#txAmount').value=''; $('#txNote').value=''; $('#txGoal').value = ''; $('#txType').value = 'savings';
         $('#goalSuggestion').style.display = 'none';
         
         // Update UI immediately (optimistic rendering)
@@ -3529,7 +3522,7 @@
             appState.transactions.splice(txIndex, 1);
             // Revert person's savings
             if(p) {
-              p.currentSavings = (p.currentSavings || 0) - amt;
+              p.currentSavings = (p.currentSavings || 0) - signedAmount;
             }
             // Re-render UI
             renderTransactions();
@@ -3550,7 +3543,7 @@
         hideCrudLoading();
         appState.transactions.shift();
         if(p) {
-          p.currentSavings = (p.currentSavings || 0) - amt;
+          p.currentSavings = (p.currentSavings || 0) - signedAmount;
         }
         renderTransactions();
         buildTxCharts();
@@ -3567,7 +3560,13 @@
     // Add smart suggestions when amount changes
     $('#txAmount').addEventListener('input', (e) => {
       const amount = Number(e.target.value || 0);
-      showGoalSuggestion(amount);
+      const txType = $('#txType').value === 'expense' ? 'expense' : 'savings';
+      showGoalSuggestion(txType === 'expense' ? 0 : amount);
+    });
+    $('#txType').addEventListener('change', () => {
+      const amount = Number($('#txAmount').value || 0);
+      const txType = $('#txType').value === 'expense' ? 'expense' : 'savings';
+      showGoalSuggestion(txType === 'expense' ? 0 : amount);
     });
 
     function renderTransactions(){
@@ -3655,11 +3654,16 @@
         } else {
           goalDisplay = '<span class="badge text-white" style="background-color: rgba(255, 255, 255, 0.15);">General</span>';
         }
+        const isExpense = Number(t.amount || 0) < 0;
+        const typeBadge = isExpense
+          ? '<span class="badge text-white" style="background-color: #ef4444;">Expense</span>'
+          : '<span class="badge text-white" style="background-color: #10b981;">Savings</span>';
           
         tr.innerHTML = `
           <td style="padding: 1rem;">${t.date}</td>
           <td style="padding: 1rem;">${t.person}</td>
-          <td class="text-end" style="padding: 1rem; font-weight: 600; color: var(--text);">${fmtMoney(t.amount)}</td>
+          <td style="padding: 1rem;">${typeBadge}</td>
+          <td class="text-end" style="padding: 1rem; font-weight: 600; color: ${Number(t.amount || 0) < 0 ? '#ef4444' : 'var(--text)'};">${fmtMoney(t.amount)}</td>
           <td class="text-end" style="padding: 1rem; font-weight: 600; color: #10b981;">${fmtMoney(balance)}</td>
           <td style="padding: 1rem;">${goalDisplay}</td>
           <td style="padding: 1rem; color: var(--muted);">${t.note||'—'}</td>
@@ -3730,7 +3734,14 @@
                     </div>
                     <div class="col-md-6">
                       <label class="form-label">Amount</label>
-                      <input class="form-control" id="editTxAmount" type="number" step="0.01" value="${tx.amount}"/>
+                      <input class="form-control" id="editTxAmount" type="number" step="0.01" value="${Math.abs(Number(tx.amount || 0))}"/>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Type</label>
+                      <select class="form-select" id="editTxType">
+                        <option value="savings" ${Number(tx.amount || 0) >= 0 ? 'selected' : ''}>Savings</option>
+                        <option value="expense" ${Number(tx.amount || 0) < 0 ? 'selected' : ''}>Expense</option>
+                      </select>
                     </div>
                     <div class="col-md-6">
                       <label class="form-label">Person</label>
@@ -3801,17 +3812,22 @@
         // Handle save
         document.getElementById('saveTxEdit').addEventListener('click', () => {
           const newDate = $('#editTxDate').value;
-          const newAmount = Number($('#editTxAmount').value);
+          const newAmountRaw = Number($('#editTxAmount').value);
+          const newType = $('#editTxType').value === 'expense' ? 'expense' : 'savings';
+          const newAmount = newType === 'expense' ? -Math.abs(newAmountRaw) : Math.abs(newAmountRaw);
           const newPerson = $('#editTxPerson').value;
           const newGoalId = $('#editTxGoal').value || null;
           const newNote = $('#editTxNote').value.trim();
           
-          if(!newDate || !isFinite(newAmount) || newAmount <= 0) {
+          if(!newDate || !isFinite(newAmountRaw) || newAmountRaw <= 0) {
             showAlert('Please fill in valid date and amount', 'warning');
             return;
           }
           
-          showCrudLoading('Updating transaction...', `Saving changes to ${fmtMoney(newAmount)} transaction`);
+          showCrudLoading(
+            'Updating transaction...',
+            `Saving changes to ${newType === 'expense' ? 'expense' : 'savings'} transaction ${fmtMoney(Math.abs(newAmountRaw))}`
+          );
           
           // Update person's savings (remove old amount, add new amount)
           const oldPerson = appState.people.find(p => p.name === tx.person);
@@ -4126,7 +4142,8 @@
     }
     function buildTimelineChart(){
       const ctx = $('#timelineChart'); if(timelineChart) timelineChart.destroy();
-      const monthly = householdMonthlyContribution();
+      const income = householdMonthlyIncome();
+      const monthly = income * (appState.settings.currentRatePct||0)/100;
       const apy = appState.settings.apyPct||0;
       const labels = appState.goals.map(g=> g.name);
       const dataInMonths = appState.goals.map(g=> {
