@@ -867,6 +867,18 @@
 <!-- Dashboard -->
 <section class="tab-pane fade show active" id="tabDashboard" role="tabpanel">
 <div class="row g-3">
+<div class="col-12 mb-2 d-flex justify-content-end">
+  <div class="d-flex flex-column align-items-end">
+    <div class="d-flex align-items-center gap-2">
+      <label for="dashboardMode" class="small text-muted mb-0">Dashboard View</label>
+      <select id="dashboardMode" class="form-select form-select-sm" style="max-width: 190px;">
+        <option value="savings">Savings Only</option>
+        <option value="net">Net Flow</option>
+      </select>
+    </div>
+    <small class="text-muted mt-1">Savings Only hides expenses from dashboard charts.</small>
+  </div>
+</div>
 <!-- KPIs -->
 <div class="col-12 mb-4">
 <div class="row g-4">
@@ -2288,6 +2300,12 @@
     /********** DOM SHORTHANDS **********/
     const $ = (s)=> document.querySelector(s);
     const $all = (s)=> Array.from(document.querySelectorAll(s));
+    let dashboardViewMode = localStorage.getItem('dashboardViewMode') || 'savings';
+    function getDashboardTx() {
+      return dashboardViewMode === 'net'
+        ? appState.transactions
+        : appState.transactions.filter(t => Number(t.amount || 0) > 0);
+    }
 
     /********** NAV UTILS **********/
     $('#printBtn').addEventListener('click', ()=> window.print());
@@ -2336,6 +2354,14 @@
     });
     
     initTheme();
+    if ($('#dashboardMode')) {
+      $('#dashboardMode').value = dashboardViewMode;
+      $('#dashboardMode').addEventListener('change', (e) => {
+        dashboardViewMode = e.target.value === 'net' ? 'net' : 'savings';
+        localStorage.setItem('dashboardViewMode', dashboardViewMode);
+        refreshDashboardFromTransactions();
+      });
+    }
     
 
     /********** SETTINGS & KPIs **********/
@@ -2482,7 +2508,7 @@
       }
       
       // Recent activity insight
-      const recentTx = appState.transactions.slice(0, 5);
+      const recentTx = getDashboardTx().slice(0, 5);
       const totalRecent = recentTx.reduce((sum, t) => sum + t.amount, 0);
       if(totalRecent > monthlySavings * 1.2) {
         insights.push(`🔥 You're ahead of your savings target this month! Keep it up.`);
@@ -4087,8 +4113,9 @@
       const ctx = $('#contributionChart'); if(contributionChart) contributionChart.destroy();
       
       // Calculate contribution breakdown for each person
+      const dashboardTx = getDashboardTx();
       const personStats = appState.people.map(person => {
-        const personTx = appState.transactions.filter(t => t.person === person.name);
+        const personTx = dashboardTx.filter(t => t.person === person.name);
         const goalTx = personTx.filter(t => t.goalId);
         const generalTx = personTx.filter(t => !t.goalId);
         
@@ -4186,7 +4213,7 @@
       const monthLabels = months.map(d => d.toLocaleString(appState.settings.locale, {month:'short', year:'2-digit'}));
       const monthlySavings = months.map(month => {
         const monthKey = `${month.getFullYear()}-${String(month.getMonth()+1).padStart(2,'0')}`;
-        return appState.transactions
+        return getDashboardTx()
           .filter(t => t.date.slice(0,7) === monthKey)
           .reduce((sum, t) => sum + t.amount, 0);
       });
@@ -4315,7 +4342,7 @@
       const datasets = personNames.map((person, idx) => {
         const data = months.map(month => {
           const monthKey = `${month.getFullYear()}-${String(month.getMonth()+1).padStart(2,'0')}`;
-          return appState.transactions
+          return getDashboardTx()
             .filter(t => t.person === person && t.date.slice(0,7) === monthKey)
             .reduce((sum, t) => sum + t.amount, 0);
         });
@@ -4360,7 +4387,7 @@
                   
                   // Check who didn't contribute
                   const contributors = new Set();
-                  appState.transactions.forEach(t => {
+                  getDashboardTx().forEach(t => {
                     if(t.date.slice(0,7) === monthKey) {
                       contributors.add(t.person);
                     }
@@ -4395,7 +4422,7 @@
           const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
           const monthKey = `${month.getFullYear()}-${String(month.getMonth()+1).padStart(2,'0')}`;
           
-          const hasContribution = appState.transactions.some(t => 
+          const hasContribution = getDashboardTx().some(t => 
             t.person === person.name && t.date.slice(0,7) === monthKey
           );
           
@@ -4444,7 +4471,7 @@
         const monthData = { month: monthName, people: {} };
         
         appState.people.forEach(person => {
-          const contribution = appState.transactions
+          const contribution = getDashboardTx()
             .filter(t => t.person === person.name && t.date.slice(0,7) === monthKey)
             .reduce((sum, t) => sum + t.amount, 0);
           
