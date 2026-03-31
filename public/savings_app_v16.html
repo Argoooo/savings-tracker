@@ -4461,6 +4461,9 @@
     function updateContributionTable() {
       const now = new Date();
       const tableData = [];
+      const contributionTargets = Object.fromEntries(
+        appState.people.map(person => [person.name, totalMonthlyContribution(person)])
+      );
       
       // Get last 3 months for detailed view
       for(let i = 2; i >= 0; i--) {
@@ -4475,7 +4478,9 @@
             .filter(t => t.person === person.name && t.date.slice(0,7) === monthKey)
             .reduce((sum, t) => sum + t.amount, 0);
           
-          monthData.people[person.name] = contribution;
+          const target = Number(contributionTargets[person.name] || 0);
+          const pct = target > 0 ? (contribution / target) * 100 : null;
+          monthData.people[person.name] = { contribution, target, pct };
         });
         
         tableData.push(monthData);
@@ -4498,10 +4503,21 @@
                 <tr>
                   <td class="small">${row.month}</td>
                   ${appState.people.map(person => {
-                    const amount = row.people[person.name];
-                    const status = amount > 0 ? '✅' : '❌';
-                    const displayAmount = amount > 0 ? fmtMoney(amount).replace(/[₱$€¥£]/g, '').slice(0,4) : '0';
-                    return `<td class="text-center small">${status}<br><span style="font-size:0.7rem;">${displayAmount}</span></td>`;
+                    const entry = row.people[person.name] || { contribution: 0, target: 0, pct: null };
+                    const amount = Number(entry.contribution || 0);
+                    const target = Number(entry.target || 0);
+                    const pct = entry.pct;
+                    let statusIcon = '⚪';
+                    let statusText = 'N/A';
+                    if (target > 0) {
+                      if (pct >= 100) { statusIcon = '✅'; statusText = 'Met'; }
+                      else if (pct >= 50) { statusIcon = '🟡'; statusText = 'Partial'; }
+                      else if (pct > 0) { statusIcon = '🔹'; statusText = 'Started'; }
+                      else { statusIcon = '❌'; statusText = 'None'; }
+                    }
+                    const pctText = target > 0 ? `${Math.min(999, Math.round(Math.max(0, pct || 0)))}%` : 'N/A';
+                    const amountText = fmtMoney(Math.max(0, amount)).replace(/[^\d.,-]/g, '');
+                    return `<td class="text-center small">${statusIcon}<br><span style="font-size:0.7rem;">${pctText}</span><br><span style="font-size:0.65rem; opacity:.7;">${amountText}</span><br><span style="font-size:0.6rem; opacity:.65;">${statusText}</span></td>`;
                   }).join('')}
                 </tr>
               `).join('')}
