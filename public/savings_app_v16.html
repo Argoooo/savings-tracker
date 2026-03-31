@@ -1330,6 +1330,35 @@
   <div class="card-header bg-transparent border-0 p-4 pb-2">
     <h5 class="mb-0 fw-semibold">📋 Transaction History</h5>
     <small class="text-muted">All your savings transactions</small>
+    <div class="row g-2 mt-2">
+      <div class="col-md-3">
+        <select class="form-select form-select-sm" id="txFilterPerson">
+          <option value="">All People</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select class="form-select form-select-sm" id="txFilterType">
+          <option value="">All Types</option>
+          <option value="savings">Savings</option>
+          <option value="expense">Expense</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <input class="form-control form-control-sm" id="txFilterDateFrom" type="date" placeholder="From"/>
+      </div>
+      <div class="col-md-2">
+        <input class="form-control form-control-sm" id="txFilterDateTo" type="date" placeholder="To"/>
+      </div>
+      <div class="col-md-2">
+        <select class="form-select form-select-sm" id="txFilterGoal">
+          <option value="">All Goals</option>
+          <option value="general">General Savings</option>
+        </select>
+      </div>
+      <div class="col-md-1 d-grid">
+        <button class="btn btn-outline-secondary btn-sm" id="txFilterClear" title="Clear filters">✕</button>
+      </div>
+    </div>
   </div>
   <div class="card-body p-0">
     <div class="table-responsive">
@@ -2281,10 +2310,11 @@
     function toMonthly(amount, freq){ const f=(freq||'').toLowerCase(); return (f==='yearly'||f==='annual'||f==='annually')? amount/12 : amount; }
     function totalMonthlyIncome(p){ return (p.incomes||[]).reduce((s,i)=> s + toMonthly(Number(i.amount||0), i.frequency||'monthly'), 0); }
     function totalMonthlyContribution(p, rate = null){ 
-      const income = totalMonthlyIncome(p);
-      const rateContrib = rate !== null ? income * (rate / 100) : income * ((appState.settings.currentRatePct || 0) / 100);
       const fixedContrib = Number(p.fixedMonthlyContribution || 0);
-      return rateContrib + fixedContrib;
+      if (fixedContrib > 0) return fixedContrib;
+      const income = totalMonthlyIncome(p);
+      const effectiveRate = rate !== null ? rate : (appState.settings.currentRatePct || 0);
+      return income * (effectiveRate / 100);
     }
     function householdMonthlyIncome(){ return appState.people.reduce((s,p)=> s + totalMonthlyIncome(p), 0); }
     function householdMonthlyContribution(rate = null){ return appState.people.reduce((s,p)=> s + totalMonthlyContribution(p, rate), 0); }
@@ -2402,8 +2432,7 @@
       }
       
       // Goals On Track
-      const income = householdMonthlyIncome();
-      const monthly = income * (appState.settings.currentRatePct||0)/100;
+      const monthly = householdMonthlyContribution();
       const apy = appState.settings.apyPct||0;
       
       let onTrackCount = 0;
@@ -2424,8 +2453,7 @@
         return;
       }
       
-      const income = householdMonthlyIncome();
-      const monthly = income * (appState.settings.currentRatePct||0)/100;
+      const monthly = householdMonthlyContribution();
       const apy = appState.settings.apyPct||0;
       
       const goalsHtml = appState.goals.slice()
@@ -2942,8 +2970,7 @@
       const filterOwner = $('#goalsFilterOwner')?.value || '';
       const filterStatus = $('#goalsFilterStatus')?.value || '';
       
-      const income = householdMonthlyIncome();
-      const monthly = income * (appState.settings.currentRatePct||0)/100;
+      const monthly = householdMonthlyContribution();
       const apy = appState.settings.apyPct||0;
       
       // Filter and sort goals
@@ -3683,6 +3710,23 @@
     $('#txSharedAll').addEventListener('change', () => {
       $('#txPerson').disabled = $('#txSharedAll').checked;
     });
+    ['#txFilterPerson', '#txFilterType', '#txFilterDateFrom', '#txFilterDateTo', '#txFilterGoal'].forEach(sel => {
+      const el = $(sel);
+      if (el) {
+        el.addEventListener('change', renderTransactions);
+        if (sel === '#txFilterDateFrom' || sel === '#txFilterDateTo') {
+          el.addEventListener('input', renderTransactions);
+        }
+      }
+    });
+    $('#txFilterClear')?.addEventListener('click', () => {
+      if ($('#txFilterPerson')) $('#txFilterPerson').value = '';
+      if ($('#txFilterType')) $('#txFilterType').value = '';
+      if ($('#txFilterDateFrom')) $('#txFilterDateFrom').value = '';
+      if ($('#txFilterDateTo')) $('#txFilterDateTo').value = '';
+      if ($('#txFilterGoal')) $('#txFilterGoal').value = '';
+      renderTransactions();
+    });
     // Default state: shared split is only available for expenses
     $('#txSharedAll').disabled = true;
 
@@ -3693,6 +3737,46 @@
       buildConsistencyChart();
       buildTimelineChart();
       buildMonthlyContributionChart();
+    }
+
+    function setupTransactionFilters() {
+      const personFilter = $('#txFilterPerson');
+      const goalFilter = $('#txFilterGoal');
+      if (personFilter) {
+        personFilter.innerHTML = '<option value="">All People</option>' +
+          appState.people.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+      }
+      if (goalFilter) {
+        const goalOptions = appState.goals
+          .slice()
+          .sort((a,b) => (a.priority||999) - (b.priority||999))
+          .map(g => `<option value="${g.id}">${g.name}</option>`)
+          .join('');
+        goalFilter.innerHTML = '<option value="">All Goals</option><option value="general">General Savings</option>' + goalOptions;
+      }
+    }
+
+    function getFilteredTransactions() {
+      const person = $('#txFilterPerson')?.value || '';
+      const type = $('#txFilterType')?.value || '';
+      const dateFrom = $('#txFilterDateFrom')?.value || '';
+      const dateTo = $('#txFilterDateTo')?.value || '';
+      const goal = $('#txFilterGoal')?.value || '';
+      return appState.transactions.filter(t => {
+        if (person && t.person !== person) return false;
+        if (type) {
+          const isExpense = Number(t.amount || 0) < 0;
+          if (type === 'expense' && !isExpense) return false;
+          if (type === 'savings' && isExpense) return false;
+        }
+        if (dateFrom && t.date < dateFrom) return false;
+        if (dateTo && t.date > dateTo) return false;
+        if (goal) {
+          const txGoal = t.goalId || 'general';
+          if (txGoal !== goal) return false;
+        }
+        return true;
+      });
     }
 
     function renderTransactions(){
@@ -3720,6 +3804,7 @@
       
       // goal select
       renderGoalOptions();
+      setupTransactionFilters();
 
       // Show/hide empty state
       if (appState.transactions.length === 0) {
@@ -3774,8 +3859,12 @@
         balanceMap.set(t.id, newBalance);
       });
       
-      // Display transactions sorted by date descending (newest first)
-      appState.transactions.slice().sort((a,b)=> b.date.localeCompare(a.date)).forEach(t=>{
+      // Display transactions sorted by date descending (newest first), then apply filters
+      const filteredTransactions = getFilteredTransactions().slice().sort((a,b)=> b.date.localeCompare(a.date));
+      if (filteredTransactions.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No matching transactions for selected filters.</td></tr>';
+      }
+      filteredTransactions.forEach(t=>{
         const tr = document.createElement('tr');
         const goal = t.goalId ? appState.goals.find(g => g.id === t.goalId) : null;
         const balance = balanceMap.get(t.id) || 0;
@@ -4273,8 +4362,7 @@
     }
     function buildTimelineChart(){
       const ctx = $('#timelineChart'); if(timelineChart) timelineChart.destroy();
-      const income = householdMonthlyIncome();
-      const monthly = income * (appState.settings.currentRatePct||0)/100;
+      const monthly = householdMonthlyContribution();
       const apy = appState.settings.apyPct||0;
       const labels = appState.goals.map(g=> g.name);
       const dataInMonths = appState.goals.map(g=> {
