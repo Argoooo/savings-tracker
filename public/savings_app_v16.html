@@ -1241,13 +1241,12 @@
           <small class="text-info">💡 <span id="suggestionText"></span></small>
         </div>
       </div>
-      <div class="col-md-2">
+      <div class="col-12 col-lg-8 mt-2">
         <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Note (Optional)</label>
-        <input class="form-control form-control-lg" id="txNote" placeholder="e.g., Payday auto-save, Bonus, etc." style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+        <input class="form-control form-control-lg" id="txNote" placeholder="e.g., tuition payment, emergency, payday auto-save..." style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
       </div>
-      <div class="col-md-2">
-        <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem; opacity: 0;">Placeholder</label>
-        <button class="btn btn-primary w-100" id="addTxBtn" style="border-radius: 10px; padding: 0.75rem; font-weight: 600; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+      <div class="col-12 col-lg-4 mt-2 d-flex align-items-end justify-content-center justify-content-lg-center">
+        <button class="btn btn-primary px-5" id="addTxBtn" style="border-radius: 10px; padding: 0.75rem 2.5rem; font-weight: 600; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); min-width: 200px;">
           <span style="font-size: 1.2rem; margin-right: 0.25rem;">+</span> Add
         </button>
       </div>
@@ -1276,6 +1275,34 @@
       <div class="kpi-icon" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2));">👤</div>
       <div class="kpi-label">Top Contributor</div>
       <div class="kpi-value small" id="txTopPerson" style="font-size: 1.1rem;">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- Transaction Flow Summary -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100" style="background: rgba(16, 185, 129, 0.08); border-radius: 14px;">
+      <div class="card-body py-3 px-4">
+        <div class="small text-uppercase text-muted fw-semibold" style="letter-spacing: 0.5px;">Gross Savings</div>
+        <div class="h5 mb-0 mt-1" id="txGrossSavings" style="color: #10b981; font-weight: 700;">—</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100" style="background: rgba(239, 68, 68, 0.08); border-radius: 14px;">
+      <div class="card-body py-3 px-4">
+        <div class="small text-uppercase text-muted fw-semibold" style="letter-spacing: 0.5px;">Total Expenses</div>
+        <div class="h5 mb-0 mt-1" id="txTotalExpenses" style="color: #ef4444; font-weight: 700;">—</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100" style="background: rgba(59, 130, 246, 0.08); border-radius: 14px;">
+      <div class="card-body py-3 px-4">
+        <div class="small text-uppercase text-muted fw-semibold" style="letter-spacing: 0.5px;">Net Flow</div>
+        <div class="h5 mb-0 mt-1" id="txNetFlow" style="font-weight: 700;">—</div>
+      </div>
     </div>
   </div>
 </div>
@@ -3478,8 +3505,7 @@
         // Update UI immediately (optimistic rendering)
         renderTransactions();
         buildTxCharts();
-        renderEnhancedKPIs();
-        renderGoalsGlance();
+        refreshDashboardFromTransactions();
         renderPeople();
         renderGoals();
         
@@ -3528,8 +3554,7 @@
             renderTransactions();
             renderPeople();
             buildTxCharts();
-            renderEnhancedKPIs();
-            renderGoalsGlance();
+            refreshDashboardFromTransactions();
             renderGoals();
           }
           // Show error message with details
@@ -3547,8 +3572,7 @@
         }
         renderTransactions();
         buildTxCharts();
-        renderEnhancedKPIs();
-        renderGoalsGlance();
+        refreshDashboardFromTransactions();
         renderPeople();
         renderGoals();
         showAlert('Failed to add transaction: ' + error.message, 'danger');
@@ -3569,14 +3593,30 @@
       showGoalSuggestion(txType === 'expense' ? 0 : amount);
     });
 
+    function refreshDashboardFromTransactions() {
+      renderEnhancedKPIs();
+      renderGoalsGlance();
+      buildContributionChart();
+      buildConsistencyChart();
+      buildTimelineChart();
+      buildMonthlyContributionChart();
+    }
+
     function renderTransactions(){
       const emptyState = $('#txEmptyState');
       const tableBody = $('#txTableBody');
       
       // summary
-      $('#txTotal').textContent = fmtMoney(txTotal());
+      const total = txTotal();
+      const grossSavings = appState.transactions.reduce((sum, t) => sum + Math.max(0, Number(t.amount || 0)), 0);
+      const totalExpensesAbs = appState.transactions.reduce((sum, t) => sum + Math.abs(Math.min(0, Number(t.amount || 0))), 0);
+      $('#txTotal').textContent = fmtMoney(total);
       const last30 = appState.transactions.filter(t => (new Date() - new Date(t.date)) <= 30*86400000).reduce((s,t)=> s+t.amount,0);
       $('#txLast30').textContent = fmtMoney(last30);
+      $('#txGrossSavings').textContent = fmtMoney(grossSavings);
+      $('#txTotalExpenses').textContent = fmtMoney(totalExpensesAbs);
+      $('#txNetFlow').textContent = fmtMoney(total);
+      $('#txNetFlow').style.color = total < 0 ? '#ef4444' : '#10b981';
       const totalsByPerson = {};
       appState.transactions.forEach(t=> totalsByPerson[t.person]=(totalsByPerson[t.person]||0)+t.amount);
       const top = Object.entries(totalsByPerson).sort((a,b)=> b[1]-a[1])[0];
@@ -3701,8 +3741,7 @@
           hideCrudLoading();
           renderTransactions();
           buildTxCharts();
-          renderEnhancedKPIs();
-          renderGoalsGlance();
+          refreshDashboardFromTransactions();
           renderPeople();
           renderGoals();
         } catch (error) {
@@ -3855,8 +3894,7 @@
           // Update UI immediately (optimistic update)
           renderTransactions();
           buildTxCharts();
-          renderEnhancedKPIs();
-          renderGoalsGlance();
+          refreshDashboardFromTransactions();
           renderPeople();
           renderGoals();
           modal.hide();
@@ -3916,8 +3954,7 @@
             // Re-render to show original values
             renderTransactions();
             buildTxCharts();
-            renderEnhancedKPIs();
-            renderGoalsGlance();
+            refreshDashboardFromTransactions();
             renderPeople();
             renderGoals();
             showAlert('Failed to save changes: ' + (error.message || 'Unknown error'), 'danger');
