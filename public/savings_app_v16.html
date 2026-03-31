@@ -1244,6 +1244,12 @@
       <div class="col-12 col-lg-8 mt-2">
         <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Note (Optional)</label>
         <input class="form-control form-control-lg" id="txNote" placeholder="e.g., tuition payment, emergency, payday auto-save..." style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);"/>
+        <div class="form-check mt-2">
+          <input class="form-check-input" type="checkbox" id="txSharedAll"/>
+          <label class="form-check-label small text-muted" for="txSharedAll">
+            Split this expense equally across all contributors
+          </label>
+        </div>
       </div>
       <div class="col-12 col-lg-4 mt-2 d-flex align-items-end justify-content-center justify-content-lg-center">
         <button class="btn btn-primary px-5" id="addTxBtn" style="border-radius: 10px; padding: 0.75rem 2.5rem; font-weight: 600; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); min-width: 200px;">
@@ -3447,11 +3453,26 @@
     });
 
     /********** TRANSACTIONS **********/
+    function splitExpenseEqually(totalAmountAbs, count) {
+      const totalCents = Math.round(Math.abs(totalAmountAbs) * 100);
+      if (count <= 0) return [];
+      const baseCents = Math.floor(totalCents / count);
+      let remainder = totalCents % count;
+      const shares = [];
+      for (let i = 0; i < count; i++) {
+        const cents = baseCents + (remainder > 0 ? 1 : 0);
+        if (remainder > 0) remainder--;
+        shares.push(-(cents / 100));
+      }
+      return shares;
+    }
+
     $('#addTxBtn').addEventListener('click', async ()=>{
       const btn = $('#addTxBtn');
       const date = $('#txDate').value || new Date().toISOString().slice(0,10);
       const amt = Number($('#txAmount').value||0); 
       const txType = $('#txType').value === 'expense' ? 'expense' : 'savings';
+      const isSharedAll = txType === 'expense' && $('#txSharedAll').checked;
       
       if(!isFinite(amt)||amt<=0) {
         // Better error feedback
@@ -3466,9 +3487,17 @@
       
       // Show loading popup
       const signedAmount = txType === 'expense' ? -Math.abs(amt) : Math.abs(amt);
+      const sharedPeople = isSharedAll ? appState.people.slice() : [];
+      if (isSharedAll && sharedPeople.length === 0) {
+        showAlert('No contributors available to split this expense.', 'warning');
+        return;
+      }
+      const sharedShares = isSharedAll ? splitExpenseEqually(amt, sharedPeople.length) : [];
       showCrudLoading(
         'Adding transaction...',
-        `${txType === 'expense' ? 'Recording expense of' : 'Saving'} ${fmtMoney(Math.abs(amt))} for ${person}`
+        isSharedAll
+          ? `Splitting ${fmtMoney(Math.abs(amt))} expense across ${sharedPeople.length} contributors`
+          : `${txType === 'expense' ? 'Recording expense of' : 'Saving'} ${fmtMoney(Math.abs(amt))} for ${person}`
       );
       
       // Show loading state
@@ -3478,28 +3507,46 @@
       
       // Find person before try block so it's accessible in catch
       const p = appState.people.find(x => x.name === person);
+      let transactionsToCreate = [];
       
       try {
-        const newTx = { 
-          id:uid(), 
-          date, 
-          person, 
-          amount:signedAmount, 
-          note, 
-          goalId,
-          createdAt: new Date().toISOString() // Add timestamp for proper sorting
-        };
+        const createdAt = new Date().toISOString();
+        const sharedLabel = 'Shared Expense';
+        const sharedNote = note ? `${note} (${sharedLabel})` : sharedLabel;
+        transactionsToCreate = isSharedAll
+          ? sharedPeople.map((personObj, idx) => ({
+              id: uid(),
+              date,
+              person: personObj.name,
+              amount: sharedShares[idx],
+              note: sharedNote,
+              goalId,
+              createdAt
+            }))
+          : [{
+              id: uid(),
+              date,
+              person,
+              amount: signedAmount,
+              note,
+              goalId,
+              createdAt
+            }];
         
         // Optimistic UI update - update state immediately
-        appState.transactions.unshift(newTx);
+        appState.transactions.unshift(...transactionsToCreate);
         
-        // Update person's current savings locally
-        if(p) {
+        // Update people's current savings locally
+        if (isSharedAll) {
+          sharedPeople.forEach((personObj, idx) => {
+            personObj.currentSavings = (personObj.currentSavings || 0) + sharedShares[idx];
+          });
+        } else if(p) {
           p.currentSavings = (p.currentSavings || 0) + signedAmount;
         }
         
         // Clear form immediately for better UX
-        $('#txAmount').value=''; $('#txNote').value=''; $('#txGoal').value = ''; $('#txType').value = 'savings';
+        $('#txAmount').value=''; $('#txNote').value=''; $('#txGoal').value = ''; $('#txType').value = 'savings'; $('#txSharedAll').checked = false; $('#txSharedAll').disabled = true; $('#txPerson').disabled = false;
         $('#goalSuggestion').style.display = 'none';
         
         // Update UI immediately (optimistic rendering)
@@ -3521,8 +3568,10 @@
         }, 500);
         
         // Save to backend in parallel (non-blocking)
-        const savePromises = [appApi.createTransaction(newTx)];
-        if(p) {
+        const savePromises = transactionsToCreate.map(tx => appApi.createTransaction(tx));
+        if (isSharedAll) {
+          sharedPeople.forEach(personObj => savePromises.push(appApi.updatePerson(personObj)));
+        } else if(p) {
           savePromises.push(appApi.updatePerson(p));
         }
         
@@ -3530,33 +3579,35 @@
         Promise.all(savePromises).then((results) => {
           hideCrudLoading();
           // Update transaction with server data if returned
-          if (results[0] && results[0].transaction) {
-            const serverTx = results[0].transaction;
-            const localTx = appState.transactions.find(t => t.id === newTx.id);
-            if (localTx && serverTx.createdAt) {
-              localTx.createdAt = serverTx.createdAt;
-              // Re-render to ensure correct balance calculation
-              renderTransactions();
+          transactionsToCreate.forEach((tx, idx) => {
+            const txResponse = results[idx];
+            if (txResponse && txResponse.transaction && txResponse.transaction.createdAt) {
+              const localTx = appState.transactions.find(t => t.id === tx.id);
+              if (localTx) localTx.createdAt = txResponse.transaction.createdAt;
             }
-          }
+          });
+          // Re-render to ensure correct balance calculation
+          renderTransactions();
         }).catch(error => {
           console.error('Error saving transaction to backend:', error);
           hideCrudLoading();
           // Remove the optimistic update if save failed
-          const txIndex = appState.transactions.findIndex(t => t.id === newTx.id);
-          if (txIndex !== -1) {
-            appState.transactions.splice(txIndex, 1);
-            // Revert person's savings
-            if(p) {
-              p.currentSavings = (p.currentSavings || 0) - signedAmount;
-            }
-            // Re-render UI
-            renderTransactions();
-            renderPeople();
-            buildTxCharts();
-            refreshDashboardFromTransactions();
-            renderGoals();
+          const txIds = new Set(transactionsToCreate.map(tx => tx.id));
+          appState.transactions = appState.transactions.filter(t => !txIds.has(t.id));
+          // Revert people's savings
+          if (isSharedAll) {
+            sharedPeople.forEach((personObj, idx) => {
+              personObj.currentSavings = (personObj.currentSavings || 0) - sharedShares[idx];
+            });
+          } else if(p) {
+            p.currentSavings = (p.currentSavings || 0) - signedAmount;
           }
+          // Re-render UI
+          renderTransactions();
+          renderPeople();
+          buildTxCharts();
+          refreshDashboardFromTransactions();
+          renderGoals();
           // Show error message with details
           const errorMsg = error.message || error.details || 'Unknown error';
           showAlert(`Failed to save transaction: ${errorMsg}. Please try again.`, 'danger');
@@ -3566,8 +3617,15 @@
       } catch (error) {
         // Rollback optimistic update on error
         hideCrudLoading();
-        appState.transactions.shift();
-        if(p) {
+        if (transactionsToCreate.length > 0) {
+          const txIds = new Set(transactionsToCreate.map(tx => tx.id));
+          appState.transactions = appState.transactions.filter(t => !txIds.has(t.id));
+        }
+        if (isSharedAll) {
+          sharedPeople.forEach((personObj, idx) => {
+            personObj.currentSavings = (personObj.currentSavings || 0) - sharedShares[idx];
+          });
+        } else if(p) {
           p.currentSavings = (p.currentSavings || 0) - signedAmount;
         }
         renderTransactions();
@@ -3591,7 +3649,16 @@
       const amount = Number($('#txAmount').value || 0);
       const txType = $('#txType').value === 'expense' ? 'expense' : 'savings';
       showGoalSuggestion(txType === 'expense' ? 0 : amount);
+      const sharedRowEnabled = txType === 'expense';
+      $('#txSharedAll').disabled = !sharedRowEnabled;
+      if (!sharedRowEnabled) $('#txSharedAll').checked = false;
+      $('#txPerson').disabled = $('#txSharedAll').checked;
     });
+    $('#txSharedAll').addEventListener('change', () => {
+      $('#txPerson').disabled = $('#txSharedAll').checked;
+    });
+    // Default state: shared split is only available for expenses
+    $('#txSharedAll').disabled = true;
 
     function refreshDashboardFromTransactions() {
       renderEnhancedKPIs();
