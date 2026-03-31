@@ -3743,16 +3743,21 @@
       const personFilter = $('#txFilterPerson');
       const goalFilter = $('#txFilterGoal');
       if (personFilter) {
+        const selectedPerson = personFilter.value || '';
         personFilter.innerHTML = '<option value="">All People</option>' +
           appState.people.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+        personFilter.value = appState.people.some(p => p.name === selectedPerson) ? selectedPerson : '';
       }
       if (goalFilter) {
+        const selectedGoal = goalFilter.value || '';
         const goalOptions = appState.goals
           .slice()
           .sort((a,b) => (a.priority||999) - (b.priority||999))
           .map(g => `<option value="${g.id}">${g.name}</option>`)
           .join('');
         goalFilter.innerHTML = '<option value="">All Goals</option><option value="general">General Savings</option>' + goalOptions;
+        const validGoals = new Set(['', 'general', ...appState.goals.map(g => g.id)]);
+        goalFilter.value = validGoals.has(selectedGoal) ? selectedGoal : '';
       }
     }
 
@@ -4527,17 +4532,48 @@
         
         return { person: person.name, currentStreak, longestStreak };
       });
+
+      const currentMonth = new Date();
+      const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth()+1).padStart(2,'0')}`;
+      const metThisMonth = appState.people.filter(person => {
+        const target = totalMonthlyContribution(person);
+        if (target <= 0) return false;
+        const actual = getDashboardTx()
+          .filter(t => t.person === person.name && t.date.slice(0,7) === monthKey)
+          .reduce((sum, t) => sum + t.amount, 0);
+        return actual >= target;
+      }).length;
       
       const streakHtml = `
-        <div class="small mb-2">
-          <strong>🔥 Contribution Streaks</strong>
+        <div class="small mb-2 fw-semibold">🔥 Contribution Streaks</div>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          ${streakData.map(s => `
+            <span class="badge rounded-pill" style="background: rgba(255,255,255,0.10); color: var(--text); font-weight: 500;">
+              ${s.person}: ${s.currentStreak} mo ${s.currentStreak >= 1 ? '🔥' : ''}
+            </span>
+          `).join('')}
         </div>
-        ${streakData.map(s => `
-          <div class="d-flex justify-content-between small mb-1">
-            <span>${s.person}</span>
-            <span>${s.currentStreak} mo current ${s.currentStreak >= 3 ? '🔥' : s.currentStreak >= 1 ? '✅' : '😴'}</span>
+        <div class="small mb-2 fw-semibold">📌 This Month</div>
+        <div class="row g-2">
+          <div class="col-4">
+            <div class="rounded p-2 text-center" style="background: rgba(16,185,129,.12);">
+              <div class="small text-muted">Met</div>
+              <div class="fw-bold">${metThisMonth}/${appState.people.length}</div>
+            </div>
           </div>
-        `).join('')}
+          <div class="col-4">
+            <div class="rounded p-2 text-center" style="background: rgba(59,130,246,.12);">
+              <div class="small text-muted">People</div>
+              <div class="fw-bold">${appState.people.length}</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="rounded p-2 text-center" style="background: rgba(245,158,11,.12);">
+              <div class="small text-muted">Mode</div>
+              <div class="fw-bold" style="font-size:.75rem;">${dashboardViewMode === 'net' ? 'Net' : 'Savings'}</div>
+            </div>
+          </div>
+        </div>
       `;
       
       const contributionStreakEl = $('#contributionStreak');
@@ -4575,11 +4611,12 @@
       }
       
       const tableHtml = `
-        <div class="small mb-2">
-          <strong>📊 Recent Months</strong>
+        <div class="small mb-2 fw-semibold d-flex justify-content-between">
+          <span>📊 Recent Months</span>
+          <span class="text-muted">Completion Heatmap</span>
         </div>
         <div class="table-responsive">
-          <table class="table table-sm">
+          <table class="table table-sm align-middle">
             <thead>
               <tr>
                 <th style="font-size:0.75rem;">Month</th>
@@ -4605,7 +4642,16 @@
                     }
                     const pctText = target > 0 ? `${Math.min(999, Math.round(Math.max(0, pct || 0)))}%` : 'N/A';
                     const amountText = fmtMoney(Math.max(0, amount)).replace(/[^\d.,-]/g, '');
-                    return `<td class="text-center small">${statusIcon}<br><span style="font-size:0.7rem;">${pctText}</span><br><span style="font-size:0.65rem; opacity:.7;">${amountText}</span><br><span style="font-size:0.6rem; opacity:.65;">${statusText}</span></td>`;
+                    const cellBg = target <= 0
+                      ? 'rgba(148,163,184,.15)'
+                      : (pct >= 100 ? 'rgba(16,185,129,.22)' : pct >= 50 ? 'rgba(245,158,11,.24)' : pct > 0 ? 'rgba(59,130,246,.20)' : 'rgba(239,68,68,.20)');
+                    const tip = `${person.name} • ${row.month}\nStatus: ${statusText}\nCompletion: ${pctText}\nSaved: ${amountText}\nTarget: ${fmtMoney(target).replace(/[^\d.,-]/g, '')}`;
+                    return `<td class="text-center small" title="${tip}" style="padding:.35rem;">
+                      <div style="border-radius:8px; padding:.4rem .2rem; background:${cellBg}; border:1px solid rgba(255,255,255,.08);">
+                        <div style="font-size:.72rem; font-weight:700;">${pctText}</div>
+                        <div style="font-size:.62rem; opacity:.8;">${statusIcon} ${statusText}</div>
+                      </div>
+                    </td>`;
                   }).join('')}
                 </tr>
               `).join('')}
