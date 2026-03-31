@@ -1013,6 +1013,16 @@
   </div>
 </div>
 
+<div class="d-flex justify-content-end mb-3">
+  <div class="d-flex align-items-center gap-2">
+    <label for="peopleViewMode" class="small text-muted mb-0">People View</label>
+    <select id="peopleViewMode" class="form-select form-select-sm" style="max-width: 190px;">
+      <option value="savings">Savings Only</option>
+      <option value="net">Net Flow</option>
+    </select>
+  </div>
+</div>
+
 <!-- People List -->
 <div id="peopleList" class="row g-4"></div>
 
@@ -2326,6 +2336,11 @@
         .filter(t => t.person === personName)
         .reduce((sum, t) => sum + Number(t.amount || 0), 0);
     }
+    function personSavingsForView(personName) {
+      return getPeopleTx()
+        .filter(t => t.person === personName)
+        .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    }
     function syncPeopleSavingsFromTransactions() {
       appState.people.forEach(p => {
         p.currentSavings = personSavingsFromTransactions(p.name);
@@ -2342,8 +2357,14 @@
     const $ = (s)=> document.querySelector(s);
     const $all = (s)=> Array.from(document.querySelectorAll(s));
     let dashboardViewMode = localStorage.getItem('dashboardViewMode') || 'savings';
+    let peopleViewMode = localStorage.getItem('peopleViewMode') || 'net';
     function getDashboardTx() {
       return dashboardViewMode === 'net'
+        ? appState.transactions
+        : appState.transactions.filter(t => Number(t.amount || 0) > 0);
+    }
+    function getPeopleTx() {
+      return peopleViewMode === 'net'
         ? appState.transactions
         : appState.transactions.filter(t => Number(t.amount || 0) > 0);
     }
@@ -2401,6 +2422,14 @@
         dashboardViewMode = e.target.value === 'net' ? 'net' : 'savings';
         localStorage.setItem('dashboardViewMode', dashboardViewMode);
         refreshDashboardFromTransactions();
+      });
+    }
+    if ($('#peopleViewMode')) {
+      $('#peopleViewMode').value = peopleViewMode;
+      $('#peopleViewMode').addEventListener('change', (e) => {
+        peopleViewMode = e.target.value === 'savings' ? 'savings' : 'net';
+        localStorage.setItem('peopleViewMode', peopleViewMode);
+        renderPeople();
       });
     }
     
@@ -2610,6 +2639,7 @@
         const monthly = totalMonthlyIncome(p);
         const fixedContrib = Number(p.fixedMonthlyContribution || 0);
         const totalContribution = totalMonthlyContribution(p);
+        const displayedSavings = personSavingsForView(p.name);
         const hasIncomes = (p.incomes || []).length > 0;
         const incomeId = `income-${p.id}`;
         
@@ -2660,10 +2690,10 @@
               <div class="row g-3 mb-4">
                 <div class="col-6">
                   <div class="p-3 rounded" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);">
-                    <div class="text-muted small mb-1" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Current Savings</div>
-                    <div class="fw-bold fs-5" style="color: #10b981;">${fmtMoney(p.currentSavings || 0)}</div>
-                    <input class="form-control form-control-sm mt-2" type="number" step="0.01" value="${p.currentSavings || 0}" data-pid="${p.id}" readonly style="border-radius: 8px; border: 1px solid rgba(255,255,255,.1); opacity: 0.85;"/>
-                    <small class="text-muted" style="font-size: 0.65rem;">Auto-calculated from transaction history</small>
+                    <div class="text-muted small mb-1" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Current Savings (${peopleViewMode === 'net' ? 'Net' : 'Savings'})</div>
+                    <div class="fw-bold fs-5" style="color: #10b981;">${fmtMoney(displayedSavings)}</div>
+                    <input class="form-control form-control-sm mt-2" type="number" step="0.01" value="${displayedSavings}" data-pid="${p.id}" readonly style="border-radius: 8px; border: 1px solid rgba(255,255,255,.1); opacity: 0.85;"/>
+                    <small class="text-muted" style="font-size: 0.65rem;">Auto-calculated from ${peopleViewMode === 'net' ? 'all transactions' : 'savings transactions only'}</small>
                   </div>
                 </div>
                 <div class="col-6">
