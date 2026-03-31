@@ -2238,6 +2238,7 @@
           })),
           scenarioRates: data.scenarioRates || [5,10,15,20]
         };
+        syncPeopleSavingsFromTransactions();
 
         // If no data, show default sample (for new users)
         if (appState.people.length === 0 && appState.goals.length === 0) {
@@ -2318,8 +2319,18 @@
     }
     function householdMonthlyIncome(){ return appState.people.reduce((s,p)=> s + totalMonthlyIncome(p), 0); }
     function householdMonthlyContribution(rate = null){ return appState.people.reduce((s,p)=> s + totalMonthlyContribution(p, rate), 0); }
-    function currentSavingsHousehold(){ return appState.people.reduce((s,p)=> s + Number(p.currentSavings||0),0); }
+    function currentSavingsHousehold(){ return appState.people.reduce((s,p)=> s + personSavingsFromTransactions(p.name),0); }
     function txTotal(){ return appState.transactions.reduce((s,t)=> s + Number(t.amount||0), 0); }
+    function personSavingsFromTransactions(personName) {
+      return appState.transactions
+        .filter(t => t.person === personName)
+        .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    }
+    function syncPeopleSavingsFromTransactions() {
+      appState.people.forEach(p => {
+        p.currentSavings = personSavingsFromTransactions(p.name);
+      });
+    }
     function fmtMoney(x){ const {currency, locale} = appState.settings; if(!isFinite(x)) return '—'; return new Intl.NumberFormat(locale||'en-PH', {style:'currency', currency:currency||'PHP'}).format(x); }
     function monthsBetween(from, to){ const f=new Date(from), t=new Date(to); if(isNaN(f)||isNaN(t)) return 0; let m=(t.getFullYear()-f.getFullYear())*12 + (t.getMonth()-f.getMonth()); if(t.getDate()>f.getDate()) m+=1; return Math.max(0,m); }
     function projectFV({principal=0, monthlyContribution=0, months=60, apyPct=0}){ const i=(apyPct||0)/100/12; if(i===0) return principal + monthlyContribution*months; return principal*Math.pow(1+i, months) + monthlyContribution*((Math.pow(1+i, months)-1)/i); }
@@ -2651,7 +2662,8 @@
                   <div class="p-3 rounded" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);">
                     <div class="text-muted small mb-1" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Current Savings</div>
                     <div class="fw-bold fs-5" style="color: #10b981;">${fmtMoney(p.currentSavings || 0)}</div>
-                    <input class="form-control form-control-sm mt-2" type="number" step="0.01" value="${p.currentSavings || 0}" data-ptype="savings" data-pid="${p.id}" placeholder="0" style="border-radius: 8px; border: 1px solid rgba(255,255,255,.1);"/>
+                    <input class="form-control form-control-sm mt-2" type="number" step="0.01" value="${p.currentSavings || 0}" data-pid="${p.id}" readonly style="border-radius: 8px; border: 1px solid rgba(255,255,255,.1); opacity: 0.85;"/>
+                    <small class="text-muted" style="font-size: 0.65rem;">Auto-calculated from transaction history</small>
                   </div>
                 </div>
                 <div class="col-6">
@@ -2734,7 +2746,6 @@
           const type = e.target.dataset.ptype;
           const p = findPersonById(pid); if(!p) return;
           if(type==='name') { p.name = e.target.value.trim()||'Person'; }
-          if(type==='savings'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return showAlert('Invalid savings amount', 'warning'); p.currentSavings=v; }
           if(type==='fixedContrib'){ const v=Number(e.target.value); if(!isFinite(v)||v<0) return showAlert('Invalid fixed contribution', 'warning'); p.fixedMonthlyContribution=v; }
           if(type==='incomeLabel' || type==='incomeAmount' || type==='incomeFreq'){
             const inc = p.incomes.find(i=> i.id===e.target.dataset.iid); if(!inc) return;
@@ -2745,7 +2756,6 @@
           // Save to backend
           let updateMessage = '';
           if(type==='name') updateMessage = `Updating ${p.name}'s name...`;
-          if(type==='savings') updateMessage = `Updating ${p.name}'s savings...`;
           if(type==='fixedContrib') updateMessage = `Updating ${p.name}'s contribution...`;
           if(type==='incomeLabel') updateMessage = `Updating income source...`;
           if(type==='incomeAmount') updateMessage = `Updating income amount...`;
@@ -2918,8 +2928,7 @@
     /********** GOALS **********/
     function ownerSavings(owner){
       if(owner==='Household') return currentSavingsHousehold();
-      const p = appState.people.find(x=> x.name===owner);
-      return p ? Number(p.currentSavings||0) : 0;
+      return personSavingsFromTransactions(owner);
     }
     
     function goalAllocatedSavings(goalId) {
@@ -4813,6 +4822,7 @@
     
     /********** RENDER ALL **********/
     function renderAll(){
+      syncPeopleSavingsFromTransactions();
       renderSettings();
       renderPeople();
       renderGoals();
