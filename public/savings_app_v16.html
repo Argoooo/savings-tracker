@@ -1230,9 +1230,14 @@
           <small class="text-muted">Record savings contributions and expenses</small>
         </div>
       </div>
-      <button class="btn btn-sm btn-outline-secondary" id="toggleAddTx" style="border-radius: 8px; padding: 0.25rem 0.5rem;" title="Toggle form">
-        <span id="toggleAddTxIcon">▼</span>
-      </button>
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-outline-primary" id="applyInterestBtn" style="border-radius: 8px; padding: 0.25rem 0.6rem;" title="Apply monthly interest">
+          ✨ Apply Interest
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" id="toggleAddTx" style="border-radius: 8px; padding: 0.25rem 0.5rem;" title="Toggle form">
+          <span id="toggleAddTxIcon">▼</span>
+        </button>
+      </div>
     </div>
     <div class="row g-3 mt-2 align-items-end" id="addTxForm" style="display: none;">
       <div class="col-md-2">
@@ -1247,6 +1252,7 @@
         <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing: 0.5px; font-size: 0.75rem;">Type</label>
         <select class="form-select form-select-lg" id="txType" style="border-radius: 10px; border: 2px solid rgba(255,255,255,.1);">
           <option value="savings">Savings</option>
+          <option value="interest">Interest</option>
           <option value="expense">Expense</option>
         </select>
       </div>
@@ -1350,6 +1356,7 @@
         <select class="form-select form-select-sm" id="txFilterType">
           <option value="">All Types</option>
           <option value="savings">Savings</option>
+          <option value="interest">Interest</option>
           <option value="expense">Expense</option>
         </select>
       </div>
@@ -2331,6 +2338,16 @@
     function householdMonthlyContribution(rate = null){ return appState.people.reduce((s,p)=> s + totalMonthlyContribution(p, rate), 0); }
     function currentSavingsHousehold(){ return appState.people.reduce((s,p)=> s + personSavingsFromTransactions(p.name),0); }
     function txTotal(){ return appState.transactions.reduce((s,t)=> s + Number(t.amount||0), 0); }
+    function isInterestTransaction(tx) {
+      return String(tx?.note || '').includes('[INTEREST]');
+    }
+    function stripInterestMarker(note) {
+      return String(note || '').replace('[INTEREST]', '').trim();
+    }
+    function withInterestMarker(note) {
+      const clean = stripInterestMarker(note);
+      return clean ? `[INTEREST] ${clean}` : '[INTEREST] Interest accrual';
+    }
     function personSavingsFromTransactions(personName) {
       return appState.transactions
         .filter(t => t.person === personName)
@@ -2361,12 +2378,12 @@
     function getDashboardTx() {
       return dashboardViewMode === 'net'
         ? appState.transactions
-        : appState.transactions.filter(t => Number(t.amount || 0) > 0);
+        : appState.transactions.filter(t => Number(t.amount || 0) > 0 && !isInterestTransaction(t));
     }
     function getPeopleTx() {
       return peopleViewMode === 'net'
         ? appState.transactions
-        : appState.transactions.filter(t => Number(t.amount || 0) > 0);
+        : appState.transactions.filter(t => Number(t.amount || 0) > 0 && !isInterestTransaction(t));
     }
 
     /********** NAV UTILS **********/
@@ -3559,11 +3576,81 @@
       return shares;
     }
 
+    $('#applyInterestBtn')?.addEventListener('click', async () => {
+      const apyInput = prompt('Annual interest rate (%)', String(appState.settings.apyPct || 3));
+      if (apyInput === null) return;
+      const apy = Number(apyInput);
+      if (!isFinite(apy) || apy < 0) return showAlert('Invalid interest rate', 'warning');
+
+      const dateInput = prompt('Interest date (YYYY-MM-DD)', new Date().toISOString().slice(0,10));
+      if (dateInput === null) return;
+      const date = dateInput.trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return showAlert('Invalid date format. Use YYYY-MM-DD', 'warning');
+
+      const scopeInput = prompt('Apply to all contributors? Type YES for all, or enter exact person name', 'YES');
+      if (scopeInput === null) return;
+      const scopeText = scopeInput.trim();
+      let targetPeople = [];
+      if (scopeText.toUpperCase() === 'YES') {
+        targetPeople = appState.people.slice();
+      } else {
+        const one = appState.people.find(p => p.name.toLowerCase() === scopeText.toLowerCase());
+        if (!one) return showAlert('Person not found for interest application', 'warning');
+        targetPeople = [one];
+      }
+      if (targetPeople.length === 0) return showAlert('No eligible contributors found', 'warning');
+
+      const monthlyRate = Math.pow(1 + (apy / 100), 1 / 12) - 1;
+      const createdAt = new Date().toISOString();
+      const interestTx = targetPeople
+        .map(p => {
+          const base = personSavingsFromTransactions(p.name);
+          const interest = Math.round(Math.max(0, base) * monthlyRate * 100) / 100;
+          if (interest <= 0) return null;
+          return {
+            id: uid(),
+            date,
+            person: p.name,
+            amount: interest,
+            note: withInterestMarker(`Monthly interest @ ${apy.toFixed(2)}% APY`),
+            goalId: null,
+            createdAt
+          };
+        })
+        .filter(Boolean);
+
+      if (interestTx.length === 0) return showAlert('No positive balances to accrue interest', 'warning');
+
+      showCrudLoading('Applying interest...', `Posting ${interestTx.length} interest transaction(s)`);
+      try {
+        appState.transactions.unshift(...interestTx);
+        renderTransactions();
+        buildTxCharts();
+        refreshDashboardFromTransactions();
+        renderPeople();
+        renderGoals();
+        await Promise.all(interestTx.map(tx => appApi.createTransaction(tx)));
+        hideCrudLoading();
+        showAlert(`Applied interest to ${interestTx.length} contributor(s).`, 'success');
+      } catch (error) {
+        const txIds = new Set(interestTx.map(t => t.id));
+        appState.transactions = appState.transactions.filter(t => !txIds.has(t.id));
+        hideCrudLoading();
+        renderTransactions();
+        buildTxCharts();
+        refreshDashboardFromTransactions();
+        renderPeople();
+        renderGoals();
+        showAlert('Failed to apply interest: ' + (error.message || 'Unknown error'), 'danger');
+      }
+    });
+
     $('#addTxBtn').addEventListener('click', async ()=>{
       const btn = $('#addTxBtn');
       const date = $('#txDate').value || new Date().toISOString().slice(0,10);
       const amt = Number($('#txAmount').value||0); 
-      const txType = $('#txType').value === 'expense' ? 'expense' : 'savings';
+      const selectedType = $('#txType').value;
+      const txType = selectedType === 'expense' ? 'expense' : (selectedType === 'interest' ? 'interest' : 'savings');
       const isSharedAll = txType === 'expense' && $('#txSharedAll').checked;
       
       if(!isFinite(amt)||amt<=0) {
@@ -3574,7 +3661,8 @@
       }
       
       const person = $('#txPerson').value || (appState.people[0]?.name || 'Household');
-      const note = ($('#txNote').value||'').trim();
+      const baseNote = ($('#txNote').value||'').trim();
+      const note = txType === 'interest' ? withInterestMarker(baseNote) : stripInterestMarker(baseNote);
       const goalId = $('#txGoal').value || null;
       
       // Show loading popup
@@ -3589,7 +3677,7 @@
         'Adding transaction...',
         isSharedAll
           ? `Splitting ${fmtMoney(Math.abs(amt))} expense across ${sharedPeople.length} contributors`
-          : `${txType === 'expense' ? 'Recording expense of' : 'Saving'} ${fmtMoney(Math.abs(amt))} for ${person}`
+          : `${txType === 'expense' ? 'Recording expense of' : txType === 'interest' ? 'Recording interest of' : 'Saving'} ${fmtMoney(Math.abs(amt))} for ${person}`
       );
       
       // Show loading state
@@ -3735,12 +3823,13 @@
     $('#txAmount').addEventListener('input', (e) => {
       const amount = Number(e.target.value || 0);
       const txType = $('#txType').value === 'expense' ? 'expense' : 'savings';
-      showGoalSuggestion(txType === 'expense' ? 0 : amount);
+      showGoalSuggestion(txType === 'expense' || $('#txType').value === 'interest' ? 0 : amount);
     });
     $('#txType').addEventListener('change', () => {
       const amount = Number($('#txAmount').value || 0);
-      const txType = $('#txType').value === 'expense' ? 'expense' : 'savings';
-      showGoalSuggestion(txType === 'expense' ? 0 : amount);
+      const selectedType = $('#txType').value;
+      const txType = selectedType === 'expense' ? 'expense' : (selectedType === 'interest' ? 'interest' : 'savings');
+      showGoalSuggestion(txType === 'expense' || txType === 'interest' ? 0 : amount);
       const sharedRowEnabled = txType === 'expense';
       $('#txSharedAll').disabled = !sharedRowEnabled;
       if (!sharedRowEnabled) $('#txSharedAll').checked = false;
@@ -3809,9 +3898,11 @@
       return appState.transactions.filter(t => {
         if (person && t.person !== person) return false;
         if (type) {
+          const isInterest = isInterestTransaction(t);
           const isExpense = Number(t.amount || 0) < 0;
+          if (type === 'interest' && !isInterest) return false;
           if (type === 'expense' && !isExpense) return false;
-          if (type === 'savings' && isExpense) return false;
+          if (type === 'savings' && (isExpense || isInterest)) return false;
         }
         if (dateFrom && t.date < dateFrom) return false;
         if (dateTo && t.date > dateTo) return false;
@@ -3920,19 +4011,23 @@
         } else {
           goalDisplay = '<span class="badge text-white" style="background-color: rgba(255, 255, 255, 0.15);">General</span>';
         }
+        const isInterest = isInterestTransaction(t);
         const isExpense = Number(t.amount || 0) < 0;
-        const typeBadge = isExpense
-          ? '<span class="badge text-white" style="background-color: #ef4444;">Expense</span>'
-          : '<span class="badge text-white" style="background-color: #10b981;">Savings</span>';
+        const typeBadge = isInterest
+          ? '<span class="badge text-white" style="background-color: #3b82f6;">Interest</span>'
+          : isExpense
+            ? '<span class="badge text-white" style="background-color: #ef4444;">Expense</span>'
+            : '<span class="badge text-white" style="background-color: #10b981;">Savings</span>';
+        const amountColor = isInterest ? '#3b82f6' : (isExpense ? '#ef4444' : 'var(--text)');
           
         tr.innerHTML = `
           <td style="padding: 1rem;">${t.date}</td>
           <td style="padding: 1rem;">${t.person}</td>
           <td style="padding: 1rem;">${typeBadge}</td>
-          <td class="text-end" style="padding: 1rem; font-weight: 600; color: ${Number(t.amount || 0) < 0 ? '#ef4444' : 'var(--text)'};">${fmtMoney(t.amount)}</td>
+          <td class="text-end" style="padding: 1rem; font-weight: 600; color: ${amountColor};">${fmtMoney(t.amount)}</td>
           <td class="text-end" style="padding: 1rem; font-weight: 600; color: #10b981;">${fmtMoney(balance)}</td>
           <td style="padding: 1rem;">${goalDisplay}</td>
-          <td style="padding: 1rem; color: var(--muted);">${t.note||'—'}</td>
+          <td style="padding: 1rem; color: var(--muted);">${stripInterestMarker(t.note)||'—'}</td>
           <td style="padding: 1rem;">
             <div class="d-flex gap-2 justify-content-end">
               <button class="btn btn-sm btn-outline-primary" data-edit-tx="${t.id}" style="border-radius: 8px;">✏️</button>
@@ -4004,7 +4099,8 @@
                     <div class="col-md-6">
                       <label class="form-label">Type</label>
                       <select class="form-select" id="editTxType">
-                        <option value="savings" ${Number(tx.amount || 0) >= 0 ? 'selected' : ''}>Savings</option>
+                        <option value="savings" ${Number(tx.amount || 0) >= 0 && !isInterestTransaction(tx) ? 'selected' : ''}>Savings</option>
+                        <option value="interest" ${isInterestTransaction(tx) ? 'selected' : ''}>Interest</option>
                         <option value="expense" ${Number(tx.amount || 0) < 0 ? 'selected' : ''}>Expense</option>
                       </select>
                     </div>
@@ -4023,7 +4119,7 @@
                     </div>
                     <div class="col-12">
                       <label class="form-label">Note</label>
-                      <input class="form-control" id="editTxNote" value="${tx.note || ''}"/>
+                      <input class="form-control" id="editTxNote" value="${stripInterestMarker(tx.note || '')}"/>
                     </div>
                   </div>
                 </div>
@@ -4078,11 +4174,13 @@
         document.getElementById('saveTxEdit').addEventListener('click', () => {
           const newDate = $('#editTxDate').value;
           const newAmountRaw = Number($('#editTxAmount').value);
-          const newType = $('#editTxType').value === 'expense' ? 'expense' : 'savings';
+          const chosenType = $('#editTxType').value;
+          const newType = chosenType === 'expense' ? 'expense' : (chosenType === 'interest' ? 'interest' : 'savings');
           const newAmount = newType === 'expense' ? -Math.abs(newAmountRaw) : Math.abs(newAmountRaw);
           const newPerson = $('#editTxPerson').value;
           const newGoalId = $('#editTxGoal').value || null;
-          const newNote = $('#editTxNote').value.trim();
+          const rawNote = $('#editTxNote').value.trim();
+          const newNote = newType === 'interest' ? withInterestMarker(rawNote) : stripInterestMarker(rawNote);
           
           if(!newDate || !isFinite(newAmountRaw) || newAmountRaw <= 0) {
             showAlert('Please fill in valid date and amount', 'warning');
